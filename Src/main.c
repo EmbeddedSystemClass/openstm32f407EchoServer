@@ -55,6 +55,44 @@ void StartDefaultTask(void const * argument);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 static void ToggleLed4(void const * argument);
+void PPS_SETUP(ETH_HandleTypeDef * heth)
+{
+	GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.Pin = GPIO_PIN_5;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  //Setup PTP Here on heth.ETH, Scott
+  //1.
+  SET_BIT((heth->Instance)->MACIMR, ETH_MACIMR_TSTIM);
+
+  //2.
+  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSCR_TSE);
+
+  //3.
+  //Program PTPSSIR.STSSI (sub second increment)
+  //SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSSR);
+  WRITE_REG((heth->Instance)->PTPSSIR, 22);
+
+  //4.
+  //Program PTPTSAR.TSA (time stamp addend) and set PTPTSCR.TTSARU
+
+  //5.
+  //Poll PTPTSCR.TTSARU until clear (addend update)
+
+  //6.
+  //For fine correction set PTPTSCR.TFSCU
+
+  //7.
+  //Program PTPTSHUR.TSUS and PTPTSLUR.TSUSS
+
+  //8.
+  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSCR_TSSTI);
+  SET_BIT((heth->Instance)->DMABMR, ETH_DMABMR_EDE);
+}
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -195,6 +233,7 @@ void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
 static void ToggleLed4(void const * argument)
 {
 	for(;;)
@@ -212,8 +251,9 @@ void StartDefaultTask(void const * argument)
   MX_LWIP_Init();
 
   /* USER CODE BEGIN 5 */
-  /* tcp echo server Init */
   tcp_echoserver_init();
+
+  PPS_SETUP(&heth);
   /* Infinite loop */
   for(;;)
   {

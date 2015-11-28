@@ -195,7 +195,6 @@ void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *heth)
 }
 
 /* USER CODE BEGIN 4 */
-
 /* USER CODE END 4 */
 
 /*******************************************************************************
@@ -214,8 +213,7 @@ static void low_level_init(struct netif *netif)
   HAL_StatusTypeDef hal_eth_init_status;
   
 /* Init ETH */
-
-   uint8_t MACAddr[6] ;
+  uint8_t MACAddr[6];
   heth.Instance = ETH;
   heth.Init.AutoNegotiation = ETH_AUTONEGOTIATION_ENABLE;
   heth.Init.PhyAddress = 2;
