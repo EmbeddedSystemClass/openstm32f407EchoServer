@@ -37,6 +37,7 @@
 
 /* USER CODE BEGIN Includes */
 #include "tcp_echoserver.h"
+#include "udp_echoserver.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -54,6 +55,8 @@ void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+/* Exported function prototypes ----------------------------------------------*/
+
 static void ToggleLed4(void const * argument);
 void PPS_SETUP(ETH_HandleTypeDef * heth)
 {
@@ -92,6 +95,12 @@ void PPS_SETUP(ETH_HandleTypeDef * heth)
   //8.
   SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSCR_TSSTI);
   SET_BIT((heth->Instance)->DMABMR, ETH_DMABMR_EDE);
+  //SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSIPV4FE);
+  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSARFE);
+  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSPTPOEFE);
+  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSPTPPSV2E);
+
+  SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_PAM);
 }
 /* USER CODE END PFP */
 
@@ -251,7 +260,8 @@ void StartDefaultTask(void const * argument)
   MX_LWIP_Init();
 
   /* USER CODE BEGIN 5 */
-  tcp_echoserver_init();
+  //tcp_echoserver_init();
+  udp_echoserver_init();
 
   PPS_SETUP(&heth);
   /* Infinite loop */
