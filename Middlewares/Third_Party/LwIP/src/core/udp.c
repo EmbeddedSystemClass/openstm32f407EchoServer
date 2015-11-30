@@ -733,6 +733,11 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
 
   /* did we chain a separate header pbuf earlier? */
   if (q != p) {
+//#if LWIP_PTP
+    /* save timesamp value */
+    p->time_sec = q->time_sec;
+    p->time_nsec = q->time_nsec;
+//#endif
     /* free the header pbuf */
     pbuf_free(q);
     q = NULL;

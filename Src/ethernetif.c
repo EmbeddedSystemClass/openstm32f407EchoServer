@@ -42,7 +42,6 @@
 
 /* Within 'USER CODE' section, code will be kept by default at each generation */
 /* USER CODE BEGIN 0 */
-
 /* USER CODE END 0 */
 
 /* Private define ------------------------------------------------------------*/
@@ -56,6 +55,7 @@
 #define IFNAME1 't'
 
 /* USER CODE BEGIN 1 */
+//#define LWIP_PTP 1
 
 /* USER CODE END 1 */
 
@@ -81,6 +81,26 @@ __ALIGN_BEGIN uint8_t Rx_Buff[ETH_RXBUFNB][ETH_RX_BUF_SIZE] __ALIGN_END; /* Ethe
 __ALIGN_BEGIN uint8_t Tx_Buff[ETH_TXBUFNB][ETH_TX_BUF_SIZE] __ALIGN_END; /* Ethernet Transmit Buffer */
 
 /* USER CODE BEGIN 2 */
+//#if LWIP_PTP
+//ETH_DMADESCTypeDef  DMAPTPRxDscrTab[ETH_RXBUFNB], DMAPTPTxDscrTab[ETH_TXBUFNB];/* Ethernet Rx & Tx PTP Helper Descriptors */
+//extern __IO ETH_DMADESCTypeDef  *DMAPTPTxDescToSet;
+//extern __IO ETH_DMADESCTypeDef  *DMAPTPRxDescToGet;
+//static void ETH_PTPStart(uint32_t UpdateMethod);
+//#endif
+
+u32_t ETH_PTPSubSecond2NanoSecond(u32_t SubSecondValue)
+{
+  uint64_t val = SubSecondValue * 1000000000ll;
+  val >>=31;
+  return val;
+}
+
+u32_t ETH_PTPNanoSecond2SubSecond(u32_t SubSecondValue)
+{
+  uint64_t val = SubSecondValue * 0x80000000ll;
+  val /= 1000000000;
+  return val;
+}
 
 /* USER CODE END 2 */
 
@@ -235,12 +255,19 @@ static void low_level_init(struct netif *netif)
     netif->flags |= NETIF_FLAG_LINK_UP;
   }
 
+//#if LWIP_PTP
   /* Initialize Tx Descriptors list: Chain Mode */
   HAL_ETH_DMATxDescListInit(&heth, DMATxDscrTab, &Tx_Buff[0][0], ETH_TXBUFNB);
-     
   /* Initialize Rx Descriptors list: Chain Mode  */
   HAL_ETH_DMARxDescListInit(&heth, DMARxDscrTab, &Rx_Buff[0][0], ETH_RXBUFNB);
- 
+//#else
+//  /* Initialize Tx Descriptors list: Chain Mode */
+//  HAL_ETH_DMATxDescListInit(&heth, DMATxDscrTab, &Tx_Buff[0][0], ETH_TXBUFNB);
+//
+//  /* Initialize Rx Descriptors list: Chain Mode  */
+//  HAL_ETH_DMARxDescListInit(&heth, DMARxDscrTab, &Rx_Buff[0][0], ETH_RXBUFNB);
+//#endif
+
 #if LWIP_ARP || LWIP_ETHERNET 
   /* set MAC hardware address length */
   netif->hwaddr_len = ETHARP_HWADDR_LEN;
@@ -272,6 +299,12 @@ static void low_level_init(struct netif *netif)
   osThreadDef(EthIf, ethernetif_input, osPriorityRealtime, 0, INTERFACE_THREAD_STACK_SIZE);
   osThreadCreate (osThread(EthIf), netif);
  
+//#if LWIP_PTP
+  /* Enable PTP Timestamping */
+//  ETH_PTPStart(ETH_PTP_FineUpdate);
+  /* ETH_PTPStart(ETH_PTP_CoarseUpdate); */
+//#endif
+
   /* Enable MAC and DMA transmission and reception */
   HAL_ETH_Start(&heth);
   
@@ -322,6 +355,13 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
   uint32_t payloadoffset = 0;
   DmaTxDesc = heth.TxDesc;
   bufferoffset = 0;
+
+//#if LWIP_PTP
+//  struct ptptime_t timestamp;
+//  buffer = ETH_PTPTxPkt_PrepareBuffer();
+//#else
+//  buffer = ETH_TxPkt_PrepareBuffer();
+//#endif
   
   /* copy frame from pbufs to driver buffers */
   for(q = p; q != NULL; q = q->next)
@@ -369,6 +409,17 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
   
   /* Prepare transmit descriptors to give to DMA */ 
   HAL_ETH_TransmitFrame(&heth, framelength);
+
+
+//#if LWIP_PTP
+    p->time_sec = ETH_PTPSubSecond2NanoSecond((heth.TxDesc)->TimeStampLow);
+    p->time_nsec = (heth.TxDesc)->TimeStampHigh;
+//  if( ETH_SUCCESS == ETH_PTPTxPkt_ChainMode(l, &timestamp) ) {
+//    p->time_sec = timestamp.tv_sec;
+//    p->time_nsec = timestamp.tv_nsec;
+//  } else {
+//    return ERR_IF;
+//  }
   
   errval = ERR_OK;
   
@@ -406,6 +457,16 @@ static struct pbuf * low_level_input(struct netif *netif)
   uint32_t byteslefttocopy = 0;
   uint32_t i=0;
   
+//#if LWIP_PTP
+//  struct ptptime_t timestamp;
+//#endif
+
+//#if LWIP_PTP
+//  frame.PTPdescriptor = NULL;
+//  ETH_PTPRxPkt_ChainMode(&frame);
+//#else
+//  ETH_RxPkt_ChainMode(&frame);
+//#endif
 
   /* get received frame */
   if (HAL_ETH_GetReceivedFrame_IT(&heth) != HAL_OK)
@@ -471,6 +532,20 @@ static struct pbuf * low_level_input(struct netif *netif)
     /* Resume DMA reception */
     heth.Instance->DMARPDR = 0;
   }
+
+//#if LWIP_PTP
+//  ETH_PTPRxPkt_ChainMode_CleanUp(&frame, &timestamp);
+//  if(p != NULL)
+//  {
+//	p->time_sec = timestamp.tv_sec;
+//	p->time_nsec = timestamp.tv_nsec;
+//  }
+//#endif
+
+//#if LWIP_PTP
+    p->time_sec = ETH_PTPSubSecond2NanoSecond((heth.RxDesc)->TimeStampLow);
+    p->time_nsec = (heth.RxDesc)->TimeStampHigh;
+
   return p;
 }
 
@@ -638,6 +713,176 @@ void ethernetif_set_link(void const *argument)
 }
 
 /* USER CODE BEGIN 7 */
+//#if LWIP_PTP
+
+/*******************************************************************************
+* Function Name  : ETH_PTPStart
+* Description    : Initialize timestamping ability of ETH
+* Input          : UpdateMethod:
+*                       ETH_PTP_FineUpdate   : Fine Update method
+*                       ETH_PTP_CoarseUpdate : Coarse Update method
+* Output         : None
+* Return         : None
+*******************************************************************************/
+//static void ETH_PTPStart(uint32_t UpdateMethod) {
+//  /* Check the parameters */
+//  assert_param(IS_ETH_PTP_UPDATE(UpdateMethod));
+//
+//  /* Mask the Time stamp trigger interrupt by setting bit 9 in the MACIMR register. */
+//  ETH_MACITConfig(ETH_MAC_IT_TST, DISABLE);
+//  /* Program Time stamp register bit 0 to enable time stamping. */
+//  ETH_PTPTimeStampCmd(ENABLE);
+//
+//  /* Program the Subsecond increment register based on the PTP clock frequency. */
+//  ETH_SetPTPSubSecondIncrement(ADJ_FREQ_BASE_INCREMENT); /* to achieve 20 ns accuracy, the value is ~ 43 */
+//
+//  if (UpdateMethod == ETH_PTP_FineUpdate) {
+//
+//    /* If you are using the Fine correction method, program the Time stamp addend register
+//     * and set Time stamp control register bit 5 (addend register update). */
+//    ETH_SetPTPTimeStampAddend(ADJ_FREQ_BASE_ADDEND);
+//    ETH_EnablePTPTimeStampAddend();
+//    /* Poll the Time stamp control register until bit 5 is cleared. */
+//    while(ETH_GetPTPFlagStatus(ETH_PTP_FLAG_TSARU) == SET);
+//  }
+//
+//  /* To select the Fine correction method (if required),
+//   * program Time stamp control register  bit 1. */
+//  ETH_PTPUpdateMethodConfig(UpdateMethod);
+//  /* Program the Time stamp high update and Time stamp low update registers
+//   * with the appropriate time value. */
+//  ETH_SetPTPTimeStampUpdate(ETH_PTP_PositiveTime, 0, 0);
+//  /* Set Time stamp control register bit 2 (Time stamp init). */
+//  ETH_InitializePTPTimeStamp();
+//  /* The Time stamp counter starts operation as soon as it is initialized
+//   * with the value written in the Time stamp update register. */
+//
+//  /* Enable the MAC receiver and transmitter for proper time stamping. ETH_Start(); */
+//}
+
+//#endif /* LWIP_PTP */
+
+/*******************************************************************************
+* Function Name  : ETH_PTPTimeStampAdjFreq
+* Description    : Updates time stamp addend register
+* Input          : Correction value in thousandth of ppm (Adj*10^9)
+* Output         : None
+* Return         : None
+*******************************************************************************/
+//void ETH_PTPTime_AdjFreq(int32_t Adj)
+//{
+//    uint32_t addend;
+//
+//
+//    /* calculate the rate by which you want to speed up or slow down the system time
+//       increments */
+//
+//    /* precise */
+//    /*
+//    int64_t addend;
+//    addend = Adj;
+//    addend *= ADJ_FREQ_BASE_ADDEND;
+//    addend /= 1000000000-Adj;
+//    addend += ADJ_FREQ_BASE_ADDEND;
+//    */
+//
+//    /* 32bit estimation
+//    ADJ_LIMIT = ((1l<<63)/275/ADJ_FREQ_BASE_ADDEND) = 11258181 = 11 258 ppm*/
+//    if( Adj > 5120000) Adj = 5120000;
+//    if( Adj < -5120000) Adj = -5120000;
+//
+//    addend = ((((275LL * Adj)>>8) * (ADJ_FREQ_BASE_ADDEND>>24))>>6) + ADJ_FREQ_BASE_ADDEND;
+//
+//    /* Reprogram the Time stamp addend register with new Rate value and set ETH_TPTSCR */
+//    ETH_SetPTPTimeStampAddend((uint32_t)addend);
+//    ETH_EnablePTPTimeStampAddend();
+//}
+
+/*******************************************************************************
+* Function Name  : ETH_PTPTimeStampUpdateOffset
+* Description    : Updates time base offset
+* Input          : Time offset with sign
+* Output         : None
+* Return         : None
+*******************************************************************************/
+//void ETH_PTPTime_UpdateOffset(struct ptptime_t * timeoffset)
+//{
+//    uint32_t Sign;
+//    uint32_t SecondValue;
+//    uint32_t NanoSecondValue;
+//    uint32_t SubSecondValue;
+//    uint32_t addend;
+//
+//    /* determine sign and correct Second and Nanosecond values */
+//    if(timeoffset->tv_sec < 0 || (timeoffset->tv_sec == 0 && timeoffset->tv_nsec < 0)) {
+//        Sign = ETH_PTP_NegativeTime;
+//        SecondValue = -timeoffset->tv_sec;
+//        NanoSecondValue = -timeoffset->tv_nsec;
+//    } else {
+//        Sign = ETH_PTP_PositiveTime;
+//        SecondValue = timeoffset->tv_sec;
+//        NanoSecondValue = timeoffset->tv_nsec;
+//    }
+//
+//    /* convert nanosecond to subseconds */
+//    SubSecondValue = ETH_PTPNanoSecond2SubSecond(NanoSecondValue);
+//
+//    /* read old addend register value*/
+//    addend = ETH_GetPTPRegister(ETH_PTPTSAR);
+//
+//    while(ETH_GetPTPFlagStatus(ETH_PTP_FLAG_TSSTU) == SET);
+//    while(ETH_GetPTPFlagStatus(ETH_PTP_FLAG_TSSTI) == SET);
+//
+//    /* Write the offset (positive or negative) in the Time stamp update high and low registers. */
+//    ETH_SetPTPTimeStampUpdate(Sign, SecondValue, SubSecondValue);
+//    /* Set bit 3 (TSSTU) in the Time stamp control register. */
+//    ETH_EnablePTPTimeStampUpdate();
+//    /* The value in the Time stamp update registers is added to or subtracted from the system */
+//    /* time when the TSSTU bit is cleared. */
+//    while(ETH_GetPTPFlagStatus(ETH_PTP_FLAG_TSSTU) == SET);
+//
+//    /* write back old addend register value */
+//    ETH_SetPTPTimeStampAddend(addend);
+//    ETH_EnablePTPTimeStampAddend();
+//}
+
+/*******************************************************************************
+* Function Name  : ETH_PTPTimeStampSetTime
+* Description    : Initialize time base
+* Input          : Time with sign
+* Output         : None
+* Return         : None
+*******************************************************************************/
+//void ETH_PTPTime_SetTime(struct ptptime_t * timestamp)
+//{
+//    uint32_t Sign;
+//    uint32_t SecondValue;
+//    uint32_t NanoSecondValue;
+//    uint32_t SubSecondValue;
+//
+//    /* determine sign and correct Second and Nanosecond values */
+//    if(timestamp->tv_sec < 0 || (timestamp->tv_sec == 0 && timestamp->tv_nsec < 0)) {
+//        Sign = ETH_PTP_NegativeTime;
+//        SecondValue = -timestamp->tv_sec;
+//        NanoSecondValue = -timestamp->tv_nsec;
+//    } else {
+//        Sign = ETH_PTP_PositiveTime;
+//        SecondValue = timestamp->tv_sec;
+//        NanoSecondValue = timestamp->tv_nsec;
+//    }
+//
+//    /* convert nanosecond to subseconds */
+//    SubSecondValue = ETH_PTPNanoSecond2SubSecond(NanoSecondValue);
+//
+//    /* Write the offset (positive or negative) in the Time stamp update high and low registers. */
+//    ETH_SetPTPTimeStampUpdate(Sign, SecondValue, SubSecondValue);
+//    /* Set Time stamp control register bit 2 (Time stamp init). */
+//    ETH_InitializePTPTimeStamp();
+//    /* The Time stamp counter starts operation as soon as it is initialized
+//     * with the value written in the Time stamp update register. */
+//    while(ETH_GetPTPFlagStatus(ETH_PTP_FLAG_TSSTI) == SET);
+//}
+
 
 /* USER CODE END 7 */
 
