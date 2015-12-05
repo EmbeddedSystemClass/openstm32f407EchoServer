@@ -65,7 +65,7 @@
 /*----- Value in opt.h for MEM_ALIGNMENT: 1 -----*/
 #define MEM_ALIGNMENT 4
 /*----- Default Value for MEMP_NUM_SYS_TIMEOUT: 5 -*/
-#define MEMP_NUM_SYS_TIMEOUT 3
+#define MEMP_NUM_SYS_TIMEOUT 5
 /*----- Value in opt.h for LWIP_ETHERNET: (LWIP_ARP || PPPOE_SUPPORT) -*/
 #define LWIP_ETHERNET 1
 /*----- Default Value for DHCP_DOES_ARP_CHECK: 1 -*/

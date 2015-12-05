@@ -38,6 +38,7 @@
 /* USER CODE BEGIN Includes */
 #include "tcp_echoserver.h"
 #include "udp_echoserver.h"
+#include "ptpd.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -45,7 +46,9 @@ osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+#define SYSTEMTICK_PERIOD_MS  10
+__IO uint32_t LocalTime = 0; /* this variable is used to create a time reference incremented by 10ms */
+static uint32_t timingdelay;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -58,7 +61,8 @@ void StartDefaultTask(void const * argument);
 /* Exported function prototypes ----------------------------------------------*/
 
 static void ToggleLed4(void const * argument);
-void PPS_SETUP(ETH_HandleTypeDef * heth)
+
+void PPS_SETUP()
 {
 	GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_InitStruct.Pin = GPIO_PIN_5;
@@ -97,10 +101,10 @@ void PPS_SETUP(ETH_HandleTypeDef * heth)
   SET_BIT((heth->Instance)->DMABMR, ETH_DMABMR_EDE);
   //SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSIPV4FE);
   SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSARFE);
-  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSPTPOEFE);
+//  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSPTPOEFE);
   SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSPTPPSV2E);
 
-  SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_PAM);
+//  SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_PAM);
 }
 /* USER CODE END PFP */
 
@@ -150,6 +154,9 @@ int main(void)
   /* add threads, ... */
   osThreadDef(LED4, ToggleLed4, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
   osThreadCreate(osThread(LED4), NULL);
+
+  PTPd_Init();
+
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -243,6 +250,33 @@ void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+/**
+  * @brief  Inserts a delay time.
+  * @param  nCount: number of 10ms periods to wait for.
+  * @retval None
+  */
+void Delay(uint32_t nCount)
+{
+  /* Capture the current local time */
+  timingdelay = LocalTime + nCount;
+
+  /* wait until the desired delay finish */
+  while(timingdelay > LocalTime)
+  {
+  }
+}
+
+/**
+  * @brief  Updates the system local time
+  * @param  None
+  * @retval None
+  */
+void Time_Update(void)
+{
+  LocalTime += SYSTEMTICK_PERIOD_MS;
+}
+
+
 static void ToggleLed4(void const * argument)
 {
 	for(;;)
@@ -263,7 +297,9 @@ void StartDefaultTask(void const * argument)
   //tcp_echoserver_init();
   udp_echoserver_init();
 
-  PPS_SETUP(&heth);
+  /* PTP daemon periodic services are done here */
+  ptpd_Periodic_Handle(LocalTime);
+
   /* Infinite loop */
   for(;;)
   {

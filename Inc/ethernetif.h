@@ -38,6 +38,7 @@
 #include "lwip/netif.h"
 #include "cmsis_os.h"
 
+
 /* Exported types ------------------------------------------------------------*/
 /* Structure that include link thread parameters */
 struct link_str {
@@ -65,11 +66,11 @@ void ethernetif_update_config(struct netif *netif);
 void ethernetif_notify_conn_changed(struct netif *netif);
 
 /* USER CODE BEGIN 1 */
-void ETH_PTPTime_SetTime(struct ptptime_t * timestamp);
+void ETH_PTPTime_SetTime(ETH_HandleTypeDef * heth, struct ptptime_t * timestamp);
 void ETH_PTPTime_GetTime(struct ptptime_t * timestamp);
 
-void ETH_PTPTime_UpdateOffset(struct ptptime_t * timeoffset);
-void ETH_PTPTime_AdjFreq(int32_t Adj);
+void ETH_PTPTime_UpdateOffset(ETH_HandleTypeDef * heth, struct ptptime_t * timeoffset);
+void ETH_PTPTime_AdjFreq(ETH_HandleTypeDef * heth, int32_t Adj);
 
   /* Examples of subsecond increment and addend values using SysClk = 72 MHz
 

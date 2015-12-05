@@ -697,8 +697,6 @@ HAL_StatusTypeDef HAL_ETH_TransmitFrame(ETH_HandleTypeDef *heth, uint32_t FrameL
   {
     /* Set LAST and FIRST segment */
     heth->TxDesc->Status |=ETH_DMATXDESC_FS|ETH_DMATXDESC_LS;
-	/*Enable PTP time stamps*/
-	heth->TxDesc->Status |= ETH_DMATXDESC_TTSE;
     /* Set frame size */
     heth->TxDesc->ControlBufferSize = (FrameLength & ETH_DMATXDESC_TBS1);
     /* Set Own bit of the Tx descriptor Status: gives the buffer back to ETHERNET DMA */
@@ -726,8 +724,6 @@ HAL_StatusTypeDef HAL_ETH_TransmitFrame(ETH_HandleTypeDef *heth, uint32_t FrameL
       {
         /* Setting the last segment bit */
         heth->TxDesc->Status |= ETH_DMATXDESC_LS;
-		/*Enable PTP time stamps*/
-		heth->TxDesc->Status |= ETH_DMATXDESC_TTSE;
         size = FrameLength - (bufcount-1)*ETH_TX_BUF_SIZE;
         heth->TxDesc->ControlBufferSize = (size & ETH_DMATXDESC_TBS1);
       }
