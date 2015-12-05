@@ -52,6 +52,8 @@ typedef int sys_prot_t;
 #define X32_F "x"
 #define SZT_F "uz" 
 
+#define LWIP_RAND rand
+
 
 
 

@@ -74,15 +74,15 @@ void PPS_SETUP()
 
   //Setup PTP Here on heth.ETH, Scott
   //1.
-  SET_BIT((heth->Instance)->MACIMR, ETH_MACIMR_TSTIM);
+  SET_BIT((heth.Instance)->MACIMR, ETH_MACIMR_TSTIM);
 
   //2.
-  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSCR_TSE);
+  SET_BIT((heth.Instance)->PTPTSCR, ETH_PTPTSCR_TSE);
 
   //3.
   //Program PTPSSIR.STSSI (sub second increment)
   //SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSSR);
-  WRITE_REG((heth->Instance)->PTPSSIR, 22);
+  WRITE_REG((heth.Instance)->PTPSSIR, 22);
 
   //4.
   //Program PTPTSAR.TSA (time stamp addend) and set PTPTSCR.TTSARU
@@ -97,12 +97,12 @@ void PPS_SETUP()
   //Program PTPTSHUR.TSUS and PTPTSLUR.TSUSS
 
   //8.
-  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSCR_TSSTI);
-  SET_BIT((heth->Instance)->DMABMR, ETH_DMABMR_EDE);
+  SET_BIT((heth.Instance)->PTPTSCR, ETH_PTPTSCR_TSSTI);
+  SET_BIT((heth.Instance)->DMABMR, ETH_DMABMR_EDE);
   //SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSIPV4FE);
-  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSARFE);
+  SET_BIT((heth.Instance)->PTPTSCR, ETH_PTPTSSR_TSSARFE);
 //  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSPTPOEFE);
-  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSPTPPSV2E);
+  SET_BIT((heth.Instance)->PTPTSCR, ETH_PTPTSSR_TSPTPPSV2E);
 
 //  SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_PAM);
 }

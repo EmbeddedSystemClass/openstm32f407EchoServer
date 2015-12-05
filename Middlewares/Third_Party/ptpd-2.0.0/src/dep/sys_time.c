@@ -122,7 +122,7 @@ void getTime(TimeInternal *time)
 {
 
     struct ptptime_t timestamp;
-    ETH_PTPTime_GetTime(&timestamp);
+    ETH_PTPTime_GetTime(&heth, &timestamp);
     time->seconds = timestamp.tv_sec;
     time->nanoseconds = timestamp.tv_nsec;
 }

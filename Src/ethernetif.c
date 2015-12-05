@@ -818,7 +818,7 @@ static void ETH_PTPStart(ETH_HandleTypeDef * heth) {
 
   SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_PAM);
 
-  TargetTime_Init(&heth);
+  TargetTime_Init(heth);
 }
 
 //#endif /* LWIP_PTP */
@@ -952,6 +952,11 @@ void ETH_PTPTime_SetTime(ETH_HandleTypeDef * heth, struct ptptime_t * timestamp)
     while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSSTI));
 }
 
+
+void ETH_PTPTime_GetTime(ETH_HandleTypeDef * heth, struct ptptime_t * timestamp) {
+  timestamp->tv_nsec = ETH_PTPSubSecond2NanoSecond(READ_REG(heth->Instance->PTPTSLR));
+  timestamp->tv_sec = READ_REG(heth->Instance->PTPTSLR);
+}
 
 /* USER CODE END 7 */
 

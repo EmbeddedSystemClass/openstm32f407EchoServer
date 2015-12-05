@@ -67,7 +67,7 @@ void ethernetif_notify_conn_changed(struct netif *netif);
 
 /* USER CODE BEGIN 1 */
 void ETH_PTPTime_SetTime(ETH_HandleTypeDef * heth, struct ptptime_t * timestamp);
-void ETH_PTPTime_GetTime(struct ptptime_t * timestamp);
+void ETH_PTPTime_GetTime(ETH_HandleTypeDef * heth, struct ptptime_t * timestamp);
 
 void ETH_PTPTime_UpdateOffset(ETH_HandleTypeDef * heth, struct ptptime_t * timeoffset);
 void ETH_PTPTime_AdjFreq(ETH_HandleTypeDef * heth, int32_t Adj);
