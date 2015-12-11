@@ -64,12 +64,22 @@
 #define NO_SYS 0
 /*----- Value in opt.h for MEM_ALIGNMENT: 1 -----*/
 #define MEM_ALIGNMENT 4
-/*----- Default Value for MEMP_NUM_SYS_TIMEOUT: 5 -*/
-#define MEMP_NUM_SYS_TIMEOUT 5
 /*----- Value in opt.h for LWIP_ETHERNET: (LWIP_ARP || PPPOE_SUPPORT) -*/
 #define LWIP_ETHERNET 1
-/*----- Default Value for DHCP_DOES_ARP_CHECK: 1 -*/
-#define DHCP_DOES_ARP_CHECK 0
+/*----- Default Value for IP_FORWARD: 0 -*/
+#define IP_FORWARD 1
+/*----- Default Value for LWIP_BROADCAST_PING: 0 -*/
+#define LWIP_BROADCAST_PING 1
+/*----- Default Value for LWIP_MULTICAST_PING: 0 -*/
+#define LWIP_MULTICAST_PING 1
+/*----- Default Value for LWIP_IGMP: 0 -*/
+#define LWIP_IGMP 1
+/*----- Default Value for LWIP_UDPLITE: 0 -*/
+#define LWIP_UDPLITE 1
+/*----- Default Value for LWIP_EVENT_API: 0 -*/
+#define LWIP_EVENT_API 0
+/*----- Default Value for LWIP_CALLBACK_API: 1 -*/
+#define LWIP_CALLBACK_API 1
 /*----- Value in opt.h for TCPIP_THREAD_STACKSIZE: 0 -----*/
 #define TCPIP_THREAD_STACKSIZE 1024
 /*----- Value in opt.h for TCPIP_THREAD_PRIO: 1 -----*/
@@ -82,6 +92,10 @@
 #define LWIP_NETCONN 1
 /*----- Value in opt.h for LWIP_SOCKET: 1 -----*/
 #define LWIP_SOCKET 1
+/*----- Default Value for SO_REUSE: 0 -*/
+#define SO_REUSE 1
+/*----- Default Value for SO_REUSE_RXTOALL: 0 -*/
+#define SO_REUSE_RXTOALL 1
 /*----- Value in opt.h for LWIP_STATS: 1 -----*/
 #define LWIP_STATS 0
 /*----- Value in opt.h for CHECKSUM_GEN_IP: 1 -----*/

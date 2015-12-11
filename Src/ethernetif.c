@@ -161,7 +161,7 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef* heth)
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
     /* Peripheral interrupt init*/
-    HAL_NVIC_SetPriority(ETH_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(ETH_IRQn, 5, 1);
     HAL_NVIC_EnableIRQ(ETH_IRQn);
   /* USER CODE BEGIN ETH_MspInit 1 */
 
@@ -237,13 +237,22 @@ static void low_level_init(struct netif *netif)
   uint8_t MACAddr[6];
   heth.Instance = ETH;
   heth.Init.AutoNegotiation = ETH_AUTONEGOTIATION_ENABLE;
-  heth.Init.PhyAddress = 2;
-  MACAddr[0] = 0x22;
-  MACAddr[1] = 0x22;
-  MACAddr[2] = 0x22;
-  MACAddr[3] = 0x22;
-  MACAddr[4] = 0x22;
-  MACAddr[5] = 0x22;
+
+  heth.Init.PhyAddress = 1;
+  MACAddr[0] = 0x11;
+  MACAddr[1] = 0x11;
+  MACAddr[2] = 0x11;
+  MACAddr[3] = 0x11;
+  MACAddr[4] = 0x11;
+  MACAddr[5] = 11;
+
+//  heth.Init.PhyAddress = 2;
+//  MACAddr[0] = 0x22;
+//  MACAddr[1] = 0x22;
+//  MACAddr[2] = 0x22;
+//  MACAddr[3] = 0x22;
+//  MACAddr[4] = 0x22;
+//  MACAddr[5] = 22;
   heth.Init.MACAddr = &MACAddr[0];
   heth.Init.RxMode = ETH_RXINTERRUPT_MODE;
   heth.Init.ChecksumMode = ETH_CHECKSUM_BY_HARDWARE;
@@ -253,7 +262,7 @@ static void low_level_init(struct netif *netif)
   if (hal_eth_init_status == HAL_OK)
   {
     /* Set netif link flag */  
-    netif->flags |= NETIF_FLAG_LINK_UP;
+    netif->flags |= NETIF_FLAG_LINK_UP | NETIF_FLAG_IGMP;
   }
 
 //#if LWIP_PTP
@@ -408,21 +417,26 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
       framelength = framelength + byteslefttocopy;
     }
   
-  /* Prepare transmit descriptors to give to DMA */ 
   /*Enable PTP time stamps*/
   heth.TxDesc->Status |= ETH_DMATXDESC_TTSE;
-  HAL_ETH_TransmitFrame(&heth, framelength);
 
 
+
+  /* Prepare transmit descriptors to give to DMA */
+  if(HAL_OK == HAL_ETH_TransmitFrame(&heth, framelength))
+  {
 //#if LWIP_PTP
-    p->time_sec = ETH_PTPSubSecond2NanoSecond((heth.TxDesc)->TimeStampLow);
-    p->time_nsec = (heth.TxDesc)->TimeStampHigh;
+    p->time_sec = (heth.TxDesc)->TimeStampHigh;
+    p->time_nsec = ETH_PTPSubSecond2NanoSecond((heth.TxDesc)->TimeStampLow);
 //  if( ETH_SUCCESS == ETH_PTPTxPkt_ChainMode(l, &timestamp) ) {
 //    p->time_sec = timestamp.tv_sec;
 //    p->time_nsec = timestamp.tv_nsec;
 //  } else {
 //    return ERR_IF;
 //  }
+  };
+
+
   
   errval = ERR_OK;
   
@@ -546,8 +560,11 @@ static struct pbuf * low_level_input(struct netif *netif)
 //#endif
 
 //#if LWIP_PTP
-    p->time_sec = ETH_PTPSubSecond2NanoSecond((heth.RxDesc)->TimeStampLow);
-    p->time_nsec = (heth.RxDesc)->TimeStampHigh;
+  if(p !=NULL)
+  {
+    p->time_sec = (heth.RxDesc)->TimeStampHigh;
+    p->time_nsec = ETH_PTPSubSecond2NanoSecond((heth.RxDesc)->TimeStampLow);
+  }
 
   return p;
 }
@@ -722,7 +739,7 @@ static void TargetTime_Init(ETH_HandleTypeDef * heth)
 /* - program target time */
 //  ETH_SetPTPTargetTime(10,0);
 	WRITE_REG(heth->Instance->PTPTTHR, 10);
-	WRITE_REG(heth->Instance->PTPTTHR, 0);
+	WRITE_REG(heth->Instance->PTPTTLR, 0);
 
 /* - unmask timestamp interrupt (9) ETH_MACIMR */
 //  ETH_MACITConfig(ETH_MAC_IT_TST, ENABLE);
@@ -809,7 +826,7 @@ static void ETH_PTPStart(ETH_HandleTypeDef * heth) {
   /* Enable the MAC receiver and transmitter for proper time stamping. ETH_Start(); */
   //enhanced descriptors
   SET_BIT((heth->Instance)->DMABMR, ETH_DMABMR_EDE);
-  //SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSIPV4FE);
+
   //all received frames
   SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSARFE);
 //  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSPTPOEFE);
@@ -817,6 +834,9 @@ static void ETH_PTPStart(ETH_HandleTypeDef * heth) {
   SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSPTPPSV2E);
 
   SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_PAM);
+
+  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSIPV4FE);
+  SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_RA);
 
   TargetTime_Init(heth);
 }
@@ -955,7 +975,7 @@ void ETH_PTPTime_SetTime(ETH_HandleTypeDef * heth, struct ptptime_t * timestamp)
 
 void ETH_PTPTime_GetTime(ETH_HandleTypeDef * heth, struct ptptime_t * timestamp) {
   timestamp->tv_nsec = ETH_PTPSubSecond2NanoSecond(READ_REG(heth->Instance->PTPTSLR));
-  timestamp->tv_sec = READ_REG(heth->Instance->PTPTSLR);
+  timestamp->tv_sec = READ_REG(heth->Instance->PTPTSHR);
 }
 
 /* USER CODE END 7 */

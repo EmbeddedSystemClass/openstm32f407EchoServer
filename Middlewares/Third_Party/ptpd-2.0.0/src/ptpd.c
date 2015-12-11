@@ -32,7 +32,7 @@ int PTPd_Init(void)
     rtOpts.servo.ap = DEFAULT_AP;
     rtOpts.servo.ai = DEFAULT_AI;
     rtOpts.maxForeignRecords = sizeof(ptpForeignRecords) / sizeof(ptpForeignRecords[0]);
-    rtOpts.stats = PTP_TEXT_STATS;
+    rtOpts.stats = PTP_NO_STATS;//PTP_TEXT_STATS;
     rtOpts.delayMechanism = DEFAULT_DELAY_MECHANISM;
 
     /* Initialize run time options with command line arguments*/
@@ -60,6 +60,7 @@ void ptpd_Periodic_Handle(__IO UInteger32 localtime)
 
     do
     {
+//    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
         doState(&ptpClock);
         /* if there are still some packets - run stack again */
     }

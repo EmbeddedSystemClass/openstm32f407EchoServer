@@ -46,9 +46,7 @@ osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-#define SYSTEMTICK_PERIOD_MS  10
-__IO uint32_t LocalTime = 0; /* this variable is used to create a time reference incremented by 10ms */
-static uint32_t timingdelay;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -57,10 +55,15 @@ static void MX_GPIO_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
+#define SYSTEMTICK_PERIOD_MS  10
+__IO uint32_t LocalTime = 0; /* this variable is used to create a time reference incremented by 10ms */
+static uint32_t timingdelay;
 /* Private function prototypes -----------------------------------------------*/
 /* Exported function prototypes ----------------------------------------------*/
 
 static void ToggleLed4(void const * argument);
+static void PtpdPeriodicTask(void const * argument);
+
 
 void PPS_SETUP()
 {
@@ -155,7 +158,8 @@ int main(void)
   osThreadDef(LED4, ToggleLed4, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
   osThreadCreate(osThread(LED4), NULL);
 
-  PTPd_Init();
+//  osThreadDef(PTPD, PtpdPeriodicTask, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+//  osThreadCreate(osThread(PTPD), NULL);
 
   /* USER CODE END RTOS_THREADS */
 
@@ -213,12 +217,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
   HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3);
 
-  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
+  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() * 10000000);
 
   HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
   /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(SysTick_IRQn, 5, 0);
 }
 
 /** Configure pins as 
@@ -245,6 +249,20 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   HAL_GPIO_Init(LED4_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LED_3Pin */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LED_5Pin */
+  GPIO_InitStruct.Pin = GPIO_PIN_14;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
 }
 
@@ -276,7 +294,6 @@ void Time_Update(void)
   LocalTime += SYSTEMTICK_PERIOD_MS;
 }
 
-
 static void ToggleLed4(void const * argument)
 {
 	for(;;)
@@ -287,22 +304,35 @@ static void ToggleLed4(void const * argument)
 }
 /* USER CODE END 4 */
 
+static void PtpdPeriodicTask(void const * argument)
+{
+  PTPd_Init();
+
+  for(;;)
+  {
+	  /* PTP daemon periodic services are done here */
+//      HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
+	  ptpd_Periodic_Handle(HAL_GetTick());
+//	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
+//	  osDelay(100);
+  }
+};
+
 /* StartDefaultTask function */
 void StartDefaultTask(void const * argument)
 {
   /* init code for LWIP */
   MX_LWIP_Init();
+  PTPd_Init();
 
   /* USER CODE BEGIN 5 */
   //tcp_echoserver_init();
-  udp_echoserver_init();
-
-  /* PTP daemon periodic services are done here */
-  ptpd_Periodic_Handle(LocalTime);
+//  udp_echoserver_init();
 
   /* Infinite loop */
   for(;;)
   {
+	ptpd_Periodic_Handle(HAL_GetTick());
     osDelay(1);
   }
   /* USER CODE END 5 */ 

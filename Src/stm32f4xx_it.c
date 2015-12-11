@@ -37,12 +37,14 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN 0 */
-
+#include "ptpd.h"
+#include "main.h"
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
 extern void xPortSysTickHandler(void);
 extern ETH_HandleTypeDef heth;
+extern __IO uint32_t LocalTime; /* this variable is used to create a time reference incremented by 10ms */
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
@@ -58,10 +60,13 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   osSystickHandler();
+
   /* USER CODE BEGIN SysTick_IRQn 1 */
+//  Time_Update();
 
   /* USER CODE END SysTick_IRQn 1 */
 }
+
 
 /******************************************************************************/
 /* STM32F4xx Peripheral Interrupt Handlers                                    */

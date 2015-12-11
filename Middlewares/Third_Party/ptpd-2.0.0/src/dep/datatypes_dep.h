@@ -86,9 +86,9 @@ typedef struct
 
 typedef struct
 {
-    Integer32     multicastAddr;
-    Integer32     peerMulticastAddr;
-    Integer32     unicastAddr;
+    UInteger32     multicastAddr;
+    UInteger32     peerMulticastAddr;
+    UInteger32     unicastAddr;
 
     struct udp_pcb    *eventPcb;
 

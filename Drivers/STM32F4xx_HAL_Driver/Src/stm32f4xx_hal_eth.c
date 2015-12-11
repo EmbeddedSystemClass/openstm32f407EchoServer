@@ -100,6 +100,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+#include "ethernetif.h"
 
 /** @addtogroup STM32F4xx_HAL_Driver
   * @{
@@ -479,8 +480,8 @@ HAL_StatusTypeDef HAL_ETH_DMATxDescListInit(ETH_HandleTypeDef *heth, ETH_DMADesc
     /* Get the pointer on the ith member of the Tx Desc list */
     dmatxdesc = DMATxDescTab + i;
     
-    /* Set Second Address Chained bit */
-    dmatxdesc->Status = ETH_DMATXDESC_TCH;  
+    /* Set Second Address Chained bit and enable PTP*/
+    dmatxdesc->Status = ETH_DMATXDESC_TCH | ETH_DMATXDESC_TTSE;
     
     /* Set Buffer1 address pointer */
     dmatxdesc->Buffer1Addr = (uint32_t)(&TxBuff[i*ETH_TX_BUF_SIZE]);
@@ -927,6 +928,7 @@ HAL_StatusTypeDef HAL_ETH_GetReceivedFrame_IT(ETH_HandleTypeDef *heth)
   */
 void HAL_ETH_IRQHandler(ETH_HandleTypeDef *heth)
 {
+  struct ptptime_t next_trigger;
   /* Frame received */
   if (__HAL_ETH_DMA_GET_FLAG(heth, ETH_DMA_FLAG_R)) 
   {
@@ -948,6 +950,29 @@ void HAL_ETH_IRQHandler(ETH_HandleTypeDef *heth)
   {
     /* Transfer complete callback */
     HAL_ETH_TxCpltCallback(heth);
+
+	/* set next trigger time */
+	/* this should not be in the past, because it will trigger imidietly */
+    ETH_PTPTime_GetTime(heth, &next_trigger);
+
+  	/* Toggle LED */
+  	/* STM_EVAL_LEDToggle(LED1); */
+
+    if(next_trigger.tv_sec % 2 == 0) {
+//        STM_EVAL_LEDOn(LED1);
+    	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+    } else {
+//        STM_EVAL_LEDOff(LED1);
+    	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+    }
+
+    next_trigger.tv_sec += 1;
+//   	ETH_SetPTPTargetTime(next_trigger.tv_sec, 0);
+	WRITE_REG(heth->Instance->PTPTTHR, next_trigger.tv_sec);
+	WRITE_REG(heth->Instance->PTPTTLR, 0);
+	/* enable next trigger */
+//    ETH_EnablePTPTimeStampInterruptTrigger();
+	SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSITE);
     
     /* Clear the Eth DMA Tx IT pending bits */
     __HAL_ETH_DMA_CLEAR_IT(heth, ETH_DMA_IT_T);
@@ -961,6 +986,8 @@ void HAL_ETH_IRQHandler(ETH_HandleTypeDef *heth)
   
   /* Clear the interrupt flags */
   __HAL_ETH_DMA_CLEAR_IT(heth, ETH_DMA_IT_NIS);
+  __HAL_ETH_DMA_CLEAR_IT(heth, ETH_DMA_FLAG_TST);
+  READ_REG(heth->Instance->PTPTSSR);
   
   /* ETH DMA Error */
   if(__HAL_ETH_DMA_GET_FLAG(heth, ETH_DMA_FLAG_AIS))

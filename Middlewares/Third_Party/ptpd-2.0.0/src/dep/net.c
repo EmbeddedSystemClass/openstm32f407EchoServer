@@ -139,7 +139,7 @@ Boolean netShutdown(NetPath *netPath)
   * @param  netPath network object
   * @retval Integer32 IPv4 address of the interface
   */
-static Integer32 findIface(const Octet *ifaceName, Octet *uuid, NetPath *netPath)
+static UInteger32 findIface(const Octet *ifaceName, Octet *uuid, NetPath *netPath)
 {
 
     struct netif * iface;
@@ -365,12 +365,12 @@ static ssize_t netRecv(Octet *buf, TimeInternal *time, BufQueue * msgQueue)
 
     if (NULL != time)
     {
-#if LWIP_PTP
+//#if LWIP_PTP
         time->seconds = p->time_sec;
         time->nanoseconds = p->time_nsec;
-#else
-        getTime(time);
-#endif
+//#else
+//        getTime(time);
+//#endif
     }
 
     /* Copy the PBUF payload into the buffer. */
@@ -405,7 +405,7 @@ ssize_t netRecvGeneral(NetPath *netPath, Octet *buf, TimeInternal *time)
     return netRecv(buf, time, &netPath->generalQ);
 }
 
-static ssize_t netSend(const Octet *buf, UInteger16 length, TimeInternal *time, const Integer32 * addr, struct udp_pcb * pcb)
+static ssize_t netSend(const Octet *buf, UInteger16 length, TimeInternal *time, const UInteger32 * addr, struct udp_pcb * pcb)
 {
     err_t result;
 
@@ -440,17 +440,19 @@ static ssize_t netSend(const Octet *buf, UInteger16 length, TimeInternal *time, 
 
     if (NULL != time)
     {
-#if LWIP_PTP
+//#if LWIP_PTP
         time->seconds = p->time_sec;
         time->nanoseconds = p->time_nsec;
-#else
-        /* TODO: use of loopback mode */
-        /*
-        time->seconds = 0;
-        time->nanoseconds = 0;
-        */
-        getTime(time);
-#endif
+//        time->seconds = p->time_nsec;
+//        time->nanoseconds = p->time_sec;
+//#else
+//        /* TODO: use of loopback mode */
+//        /*
+//        time->seconds = 0;
+//        time->nanoseconds = 0;
+//        */
+//        getTime(time);
+//#endif
         DBGV("netSend: %ds %dns\n", time->seconds, time->nanoseconds);
     } else {
         DBGV("netSend\n");

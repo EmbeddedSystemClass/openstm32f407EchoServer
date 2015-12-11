@@ -38,7 +38,6 @@
 #include "lwip/netif.h"
 #include "cmsis_os.h"
 
-
 /* Exported types ------------------------------------------------------------*/
 /* Structure that include link thread parameters */
 struct link_str {
