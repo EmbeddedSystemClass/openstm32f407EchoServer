@@ -836,7 +836,7 @@ static void ETH_PTPStart(ETH_HandleTypeDef * heth) {
   SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_PAM);
 
   SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSIPV4FE);
-  SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_RA);
+//  SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_RA);
 
   TargetTime_Init(heth);
 }

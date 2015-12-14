@@ -2,10 +2,21 @@
 
 #include "../ptpd.h"
 #include "lwip.h"
+#include "main.h"
+
+#define Line0          0
+#define Line1          24
+#define Line2          48
+#define Line3          72
+#define Line4          96
+#define Line5          120
+#define Line6          144
+#define Line7          168
+#define Line8          192
+#define Line9          216
 
 void displayStats(const PtpClock *ptpClock)
 {
-#if !defined(STM_EVAL_LCD)
     int leds = 0;
 
     /* STM_EVAL_LEDOn(LED1); */
@@ -36,8 +47,7 @@ void displayStats(const PtpClock *ptpClock)
 //        STM_EVAL_LEDOff(LED2);
 //    }
 
-#else
-    char buffer[80];
+    char buffer[80] = {0};
 
     const char *s;
 
@@ -48,13 +58,14 @@ void displayStats(const PtpClock *ptpClock)
     uuid = (unsigned char*)ptpClock->parentDS.parentPortIdentity.clockIdentity;
 
     /* master clock UUID */
-    sprintf(buffer, "%02X%02X:%02X%02X:%02X%02X:%02X%02X",
+    sprintf(buffer, "\n\r%02X%02X:%02X%02X:%02X%02X:%02X%02X\n\r",
             uuid[0], uuid[1],
             uuid[2], uuid[3],
             uuid[4], uuid[5],
             uuid[6], uuid[7]);
 
-    LCD_DisplayStringLine(Line4, (uint8_t *)buffer);
+//    LCD_DisplayStringLine(Line4, (uint8_t *)buffer);
+    print((uint8_t*)buffer, 79);
 
     switch (ptpClock->portDS.portState)
     {
@@ -71,37 +82,40 @@ void displayStats(const PtpClock *ptpClock)
     }
 
     /* state of the PTP */
-    sprintf(buffer, "state: %s          \n", s);
+    sprintf(buffer, "\n\rstate: %s          \n\r", s);
 
-    LCD_DisplayStringLine(Line5, (uint8_t *)buffer);
+//    LCD_DisplayStringLine(Line5, (uint8_t *)buffer);
+    print((uint8_t*)buffer, 79);
 
     /* one way delay */
     switch (ptpClock->portDS.delayMechanism)
     {
     case E2E:
-        sprintf(buffer, "path delay: %dns          \n", ptpClock->currentDS.meanPathDelay.nanoseconds);
+        sprintf(buffer, "\n\rpath delay: %dns            \n\r", ptpClock->currentDS.meanPathDelay.nanoseconds);
         break;
     case P2P:
-        sprintf(buffer, "path delay: %dns          \n", ptpClock->portDS.peerMeanPathDelay.nanoseconds);
+        sprintf(buffer, "\n\rpath delay: %dns            \n\r", ptpClock->portDS.peerMeanPathDelay.nanoseconds);
         break;
     default:
-        sprintf(buffer, "path delay: unknown       \n");
+        sprintf(buffer, "\n\rpath delay: unknown       \n\r");
         /* none */
         break;
     }
-    LCD_DisplayStringLine(Line6, (uint8_t *)buffer);
+//    LCD_DisplayStringLine(Line6, (uint8_t *)buffer);
+    print((uint8_t*)buffer, 79);
 
     /* offset from master */
     if (ptpClock->currentDS.offsetFromMaster.seconds)
     {
-        sprintf(buffer, "offset: %ds           \n", ptpClock->currentDS.offsetFromMaster.seconds);
+        sprintf(buffer, "\n\roffset: %ds           \n\r", ptpClock->currentDS.offsetFromMaster.seconds);
     }
     else
     {
-        sprintf(buffer, "offset: %dns           \n", ptpClock->currentDS.offsetFromMaster.nanoseconds);
+        sprintf(buffer, "\n\roffset: %dns           \n\r", ptpClock->currentDS.offsetFromMaster.nanoseconds);
     }
 
-    LCD_DisplayStringLine(Line7, (uint8_t *)buffer);
+//    LCD_DisplayStringLine(Line7, (uint8_t *)buffer);
+    print((uint8_t*)buffer, 79);
 
     /* observed drift from master */
     sign = ' ';
@@ -110,11 +124,10 @@ void displayStats(const PtpClock *ptpClock)
 
     if (ptpClock->observedDrift < 0) sign = '-';
 
-    sprintf(buffer, "drift: %c%d.%03dppm       \n", sign, abs(ptpClock->observedDrift / 1000), abs(ptpClock->observedDrift % 1000));
+    sprintf(buffer, "\n\rdrift: %c%d.%03dppm       \n\r", sign, abs(ptpClock->observedDrift / 1000), abs(ptpClock->observedDrift % 1000));
 
-    LCD_DisplayStringLine(Line8, (uint8_t *)buffer);
-
-#endif
+//    LCD_DisplayStringLine(Line8, (uint8_t *)buffer);
+    print((uint8_t*)buffer, 79);
 
 }
 

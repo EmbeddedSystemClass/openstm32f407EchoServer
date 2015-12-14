@@ -2,6 +2,8 @@
 
 #include "ptpd.h"
 
+UInteger32 statsTime = 0;
+
 RunTimeOpts rtOpts;  /* statically allocated run-time configuration data */
 PtpClock ptpClock;
 ForeignMasterRecord ptpForeignRecords[DEFAULT_MAX_FOREIGN_RECORDS];
@@ -32,7 +34,7 @@ int PTPd_Init(void)
     rtOpts.servo.ap = DEFAULT_AP;
     rtOpts.servo.ai = DEFAULT_AI;
     rtOpts.maxForeignRecords = sizeof(ptpForeignRecords) / sizeof(ptpForeignRecords[0]);
-    rtOpts.stats = PTP_NO_STATS;//PTP_TEXT_STATS;
+    rtOpts.stats = PTP_TEXT_STATS;
     rtOpts.delayMechanism = DEFAULT_DELAY_MECHANISM;
 
     /* Initialize run time options with command line arguments*/
@@ -50,6 +52,12 @@ int PTPd_Init(void)
    again and perform the actions required for the new 'port_state'. */
 void ptpd_Periodic_Handle(__IO UInteger32 localtime)
 {
+
+	if(localtime - statsTime > 1000)
+	{
+		statsTime = localtime;
+		displayStats(&ptpClock);
+	}
 
     static UInteger32 old_localtime = 0;
 

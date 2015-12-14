@@ -44,7 +44,8 @@
 /* External variables --------------------------------------------------------*/
 extern void xPortSysTickHandler(void);
 extern ETH_HandleTypeDef heth;
-extern __IO uint32_t LocalTime; /* this variable is used to create a time reference incremented by 10ms */
+extern DMA_HandleTypeDef hdma_uart5_tx;
+extern UART_HandleTypeDef huart5;
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
@@ -60,13 +61,11 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   osSystickHandler();
-
   /* USER CODE BEGIN SysTick_IRQn 1 */
 //  Time_Update();
 
   /* USER CODE END SysTick_IRQn 1 */
 }
-
 
 /******************************************************************************/
 /* STM32F4xx Peripheral Interrupt Handlers                                    */
@@ -74,6 +73,34 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
+
+/**
+* @brief This function handles DMA1 stream7 global interrupt.
+*/
+void DMA1_Stream7_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream7_IRQn 0 */
+
+  /* USER CODE END DMA1_Stream7_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_uart5_tx);
+  /* USER CODE BEGIN DMA1_Stream7_IRQn 1 */
+
+  /* USER CODE END DMA1_Stream7_IRQn 1 */
+}
+
+/**
+* @brief This function handles UART5 global interrupt.
+*/
+void UART5_IRQHandler(void)
+{
+  /* USER CODE BEGIN UART5_IRQn 0 */
+
+  /* USER CODE END UART5_IRQn 0 */
+  HAL_UART_IRQHandler(&huart5);
+  /* USER CODE BEGIN UART5_IRQn 1 */
+
+  /* USER CODE END UART5_IRQn 1 */
+}
 
 /**
 * @brief This function handles Ethernet global interrupt.

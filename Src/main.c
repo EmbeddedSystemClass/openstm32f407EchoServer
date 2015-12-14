@@ -42,16 +42,23 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart5;
+DMA_HandleTypeDef hdma_uart5_tx;
+
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+/* Buffer used for transmission */
+uint8_t aTxBuffer[] = "****UART_TwoBoards communication based on DMA****\n\r";
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
+static void MX_UART5_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -65,50 +72,6 @@ static void ToggleLed4(void const * argument);
 static void PtpdPeriodicTask(void const * argument);
 
 
-void PPS_SETUP()
-{
-	GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Pin = GPIO_PIN_5;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  //Setup PTP Here on heth.ETH, Scott
-  //1.
-  SET_BIT((heth.Instance)->MACIMR, ETH_MACIMR_TSTIM);
-
-  //2.
-  SET_BIT((heth.Instance)->PTPTSCR, ETH_PTPTSCR_TSE);
-
-  //3.
-  //Program PTPSSIR.STSSI (sub second increment)
-  //SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSSR);
-  WRITE_REG((heth.Instance)->PTPSSIR, 22);
-
-  //4.
-  //Program PTPTSAR.TSA (time stamp addend) and set PTPTSCR.TTSARU
-
-  //5.
-  //Poll PTPTSCR.TTSARU until clear (addend update)
-
-  //6.
-  //For fine correction set PTPTSCR.TFSCU
-
-  //7.
-  //Program PTPTSHUR.TSUS and PTPTSLUR.TSUSS
-
-  //8.
-  SET_BIT((heth.Instance)->PTPTSCR, ETH_PTPTSCR_TSSTI);
-  SET_BIT((heth.Instance)->DMABMR, ETH_DMABMR_EDE);
-  //SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSIPV4FE);
-  SET_BIT((heth.Instance)->PTPTSCR, ETH_PTPTSSR_TSSARFE);
-//  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSPTPOEFE);
-  SET_BIT((heth.Instance)->PTPTSCR, ETH_PTPTSSR_TSPTPPSV2E);
-
-//  SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_PAM);
-}
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -132,6 +95,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_UART5_Init();
 
   /* USER CODE BEGIN 2 */
   /* USER CODE END 2 */
@@ -222,7 +187,37 @@ void SystemClock_Config(void)
   HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
   /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+}
+
+/* UART5 init function */
+void MX_UART5_Init(void)
+{
+
+  huart5.Instance = UART5;
+  huart5.Init.BaudRate = 115200;
+  huart5.Init.WordLength = UART_WORDLENGTH_8B;
+  huart5.Init.StopBits = UART_STOPBITS_1;
+  huart5.Init.Parity = UART_PARITY_NONE;
+  huart5.Init.Mode = UART_MODE_TX;
+  huart5.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart5.Init.OverSampling = UART_OVERSAMPLING_16;
+  HAL_UART_Init(&huart5);
+
+}
+
+/** 
+  * Enable DMA controller clock
+  */
+void MX_DMA_Init(void) 
+{
+  /* DMA controller clock enable */
+  __DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
+
 }
 
 /** Configure pins as 
@@ -298,10 +293,50 @@ static void ToggleLed4(void const * argument)
 {
 	for(;;)
 	{
+		/*##-3- Wait for the end of the transfer ###################################*/
+//		while (UartReady != SET)
+//		while (HAL_UART_GetState(&huart5) != HAL_UART_STATE_READY)
+//		{
+//		}
+
 		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
-		osDelay(100);
+		osDelay(500);
 	}
 }
+
+
+void print(uint8_t *aTxBuffer, uint16_t size)
+{
+		while (HAL_UART_GetState(&huart5) != HAL_UART_STATE_READY)
+		{
+		}
+
+		if(HAL_UART_Transmit_DMA(&huart5, (uint8_t*)aTxBuffer, size)!= HAL_OK)
+		{
+//		Error_Handler(huart1);
+		}
+
+		while (HAL_UART_GetState(&huart5) != HAL_UART_STATE_READY)
+		{
+		}
+}
+
+
+/**
+  * @brief  Tx Transfer completed callback
+  * @param  UartHandle: UART handle.
+  * @note   This example shows a simple way to report end of DMA Tx transfer, and
+  *         you can add your own implementation.
+  * @retval None
+  */
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+  /* Set transmission flag: transfer complete */
+  huart->State = HAL_UART_STATE_READY;
+
+}
+
+
 /* USER CODE END 4 */
 
 static void PtpdPeriodicTask(void const * argument)
@@ -333,7 +368,7 @@ void StartDefaultTask(void const * argument)
   for(;;)
   {
 	ptpd_Periodic_Handle(HAL_GetTick());
-    osDelay(1);
+//    osDelay(1);
   }
   /* USER CODE END 5 */ 
 }

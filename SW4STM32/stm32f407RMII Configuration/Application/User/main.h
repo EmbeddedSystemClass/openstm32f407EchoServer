@@ -32,6 +32,7 @@
 /* Exported function prototypes ----------------------------------------------*/
 void Time_Update(void);
 void Delay(uint32_t nCount);
+void print(uint8_t *aTxBuffer, uint16_t size);
 
 
 #ifdef __cplusplus
