@@ -953,26 +953,26 @@ void HAL_ETH_IRQHandler(ETH_HandleTypeDef *heth)
 
 	/* set next trigger time */
 	/* this should not be in the past, because it will trigger imidietly */
-    ETH_PTPTime_GetTime(heth, &next_trigger);
-
-  	/* Toggle LED */
-  	/* STM_EVAL_LEDToggle(LED1); */
-
-    if(next_trigger.tv_sec % 2 == 0) {
-//        STM_EVAL_LEDOn(LED1);
-    	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-    } else {
-//        STM_EVAL_LEDOff(LED1);
-    	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-    }
-
-    next_trigger.tv_sec += 1;
-//   	ETH_SetPTPTargetTime(next_trigger.tv_sec, 0);
-	WRITE_REG(heth->Instance->PTPTTHR, next_trigger.tv_sec);
-	WRITE_REG(heth->Instance->PTPTTLR, 0);
-	/* enable next trigger */
-//    ETH_EnablePTPTimeStampInterruptTrigger();
-	SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSITE);
+//    ETH_PTPTime_GetTime(heth, &next_trigger);
+//
+//  	/* Toggle LED */
+//  	/* STM_EVAL_LEDToggle(LED1); */
+//
+//    if(next_trigger.tv_sec % 2 == 0) {
+////        STM_EVAL_LEDOn(LED1);
+//    	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+//    } else {
+////        STM_EVAL_LEDOff(LED1);
+//    	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+//    }
+//
+//    next_trigger.tv_sec += 1;
+////   	ETH_SetPTPTargetTime(next_trigger.tv_sec, 0);
+//	WRITE_REG(heth->Instance->PTPTTHR, next_trigger.tv_sec);
+//	WRITE_REG(heth->Instance->PTPTTLR, 0);
+//	/* enable next trigger */
+////    ETH_EnablePTPTimeStampInterruptTrigger();
+//	SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSITE);
     
     /* Clear the Eth DMA Tx IT pending bits */
     __HAL_ETH_DMA_CLEAR_IT(heth, ETH_DMA_IT_T);

@@ -238,21 +238,22 @@ static void low_level_init(struct netif *netif)
   heth.Instance = ETH;
   heth.Init.AutoNegotiation = ETH_AUTONEGOTIATION_ENABLE;
 
-  heth.Init.PhyAddress = 1;
-  MACAddr[0] = 0x11;
-  MACAddr[1] = 0x11;
-  MACAddr[2] = 0x11;
-  MACAddr[3] = 0x11;
-  MACAddr[4] = 0x11;
-  MACAddr[5] = 11;
+//  heth.Init.PhyAddress = 1;
+//  MACAddr[0] = 0x11;
+//  MACAddr[1] = 0x11;
+//  MACAddr[2] = 0x11;
+//  MACAddr[3] = 0x11;
+//  MACAddr[4] = 0x11;
+//  MACAddr[5] = 11;
 
-//  heth.Init.PhyAddress = 2;
-//  MACAddr[0] = 0x22;
-//  MACAddr[1] = 0x22;
-//  MACAddr[2] = 0x22;
-//  MACAddr[3] = 0x22;
-//  MACAddr[4] = 0x22;
-//  MACAddr[5] = 22;
+  heth.Init.PhyAddress = 2;
+  MACAddr[0] = 0x22;
+  MACAddr[1] = 0x22;
+  MACAddr[2] = 0x22;
+  MACAddr[3] = 0x22;
+  MACAddr[4] = 0x22;
+  MACAddr[5] = 22;
+
   heth.Init.MACAddr = &MACAddr[0];
   heth.Init.RxMode = ETH_RXINTERRUPT_MODE;
   heth.Init.ChecksumMode = ETH_CHECKSUM_BY_HARDWARE;
@@ -779,25 +780,25 @@ static void ETH_PTPStart(ETH_HandleTypeDef * heth) {
 //  ETH_PTPTimeStampCmd(ENABLE);
 
   /* Program the Subsecond increment register based on the PTP clock frequency. */
-  WRITE_REG((heth->Instance)->PTPSSIR, 22);
+  WRITE_REG((heth->Instance)->PTPSSIR, ADJ_FREQ_BASE_INCREMENT);
 //  ETH_SetPTPSubSecondIncrement(ADJ_FREQ_BASE_INCREMENT); /* to achieve 20 ns accuracy, the value is ~ 43 */
 
-  if (0) {
+  if (1) {
 
     /* If you are using the Fine correction method, program the Time stamp addend register
      * and set Time stamp control register bit 5 (addend register update). */
-	WRITE_REG(heth->Instance->PTPTSAR, 0xF9E395EA);
-	SET_BIT(heth->Instance->PTPTSAR, ETH_PTPTSCR_TSARU);
+	WRITE_REG(heth->Instance->PTPTSAR, ADJ_FREQ_BASE_ADDEND);
+	SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSARU);
 //    ETH_SetPTPTimeStampAddend(ADJ_FREQ_BASE_ADDEND);
 //    ETH_EnablePTPTimeStampAddend();
 
     /* Poll the Time stamp control register until bit 5 is cleared. */
-    while(READ_BIT(heth->Instance->PTPTSAR, ETH_PTPTSCR_TSARU));
+    while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSARU));
 //    while(ETH_GetPTPFlagStatus(ETH_PTP_FLAG_TSARU) == SET);
 
 	/* To select the Fine correction method (if required),
 	* program Time stamp control register  bit 1. */
-	SET_BIT(heth->Instance->PTPTSAR, ETH_PTPTSCR_TSFCU);
+	SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSFCU);
 	//  ETH_PTPUpdateMethodConfig(UpdateMethod);
 
   } else
@@ -838,7 +839,7 @@ static void ETH_PTPStart(ETH_HandleTypeDef * heth) {
   SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSIPV4FE);
 //  SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_RA);
 
-  TargetTime_Init(heth);
+//  TargetTime_Init(heth);
 }
 
 //#endif /* LWIP_PTP */

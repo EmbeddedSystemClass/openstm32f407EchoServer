@@ -88,8 +88,8 @@ void ETH_PTPTime_AdjFreq(ETH_HandleTypeDef * heth, int32_t Adj);
    +-----------+-----------+------------+
   */
 
-#define ADJ_FREQ_BASE_ADDEND      0xB191D856
-#define ADJ_FREQ_BASE_INCREMENT   43
+#define ADJ_FREQ_BASE_ADDEND      0x238391AA
+#define ADJ_FREQ_BASE_INCREMENT   215
 
 /* USER CODE END 1 */
 #endif

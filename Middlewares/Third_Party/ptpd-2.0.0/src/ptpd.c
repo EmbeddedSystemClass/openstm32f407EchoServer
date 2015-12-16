@@ -53,12 +53,6 @@ int PTPd_Init(void)
 void ptpd_Periodic_Handle(__IO UInteger32 localtime)
 {
 
-	if(localtime - statsTime > 1000)
-	{
-		statsTime = localtime;
-		displayStats(&ptpClock);
-	}
-
     static UInteger32 old_localtime = 0;
 
     catchAlarm(localtime - old_localtime);
@@ -73,5 +67,12 @@ void ptpd_Periodic_Handle(__IO UInteger32 localtime)
         /* if there are still some packets - run stack again */
     }
     while (netSelect(&ptpClock.netPath, 0) > 0);
+
+	if(localtime - statsTime > 1000)
+	{
+		statsTime = localtime;
+		displayStats(&ptpClock);
+	}
+
 }
 
