@@ -537,6 +537,10 @@ static struct pbuf * low_level_input(struct netif *netif)
       dmarxdesc->Status |= ETH_DMARXDESC_OWN;
       dmarxdesc = (ETH_DMADescTypeDef *)(dmarxdesc->Buffer2NextDescAddr);
     }
+
+    //#if LWIP_PTP
+    p->time_sec = (heth.RxDesc)->TimeStampHigh;
+    p->time_nsec = ETH_PTPSubSecond2NanoSecond((heth.RxDesc)->TimeStampLow);
     
     /* Clear Segment_Count */
     heth.RxFrameInfos.SegCount =0;
@@ -560,12 +564,6 @@ static struct pbuf * low_level_input(struct netif *netif)
 //  }
 //#endif
 
-//#if LWIP_PTP
-  if(p !=NULL)
-  {
-    p->time_sec = (heth.RxDesc)->TimeStampHigh;
-    p->time_nsec = ETH_PTPSubSecond2NanoSecond((heth.RxDesc)->TimeStampLow);
-  }
 
   return p;
 }
@@ -772,33 +770,33 @@ static void ETH_PTPStart(ETH_HandleTypeDef * heth) {
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* Mask the Time stamp trigger interrupt by setting bit 9 in the MACIMR register. */
-  SET_BIT((heth->Instance)->MACIMR, ETH_MACIMR_TSTIM);
+  (heth->Instance)->MACIMR |= ETH_MACIMR_TSTIM;
 //  ETH_MACITConfig(ETH_MAC_IT_TST, DISABLE);
 
   /* Program Time stamp register bit 0 to enable time stamping. */
-  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSCR_TSE);
+  (heth->Instance)->PTPTSCR |= ETH_PTPTSCR_TSE;
 //  ETH_PTPTimeStampCmd(ENABLE);
 
   /* Program the Subsecond increment register based on the PTP clock frequency. */
-  WRITE_REG((heth->Instance)->PTPSSIR, ADJ_FREQ_BASE_INCREMENT);
+  (heth->Instance)->PTPSSIR =  ADJ_FREQ_BASE_INCREMENT;
 //  ETH_SetPTPSubSecondIncrement(ADJ_FREQ_BASE_INCREMENT); /* to achieve 20 ns accuracy, the value is ~ 43 */
 
   if (1) {
 
     /* If you are using the Fine correction method, program the Time stamp addend register
      * and set Time stamp control register bit 5 (addend register update). */
-	WRITE_REG(heth->Instance->PTPTSAR, ADJ_FREQ_BASE_ADDEND);
-	SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSARU);
+	heth->Instance->PTPTSAR =  ADJ_FREQ_BASE_ADDEND;
+	heth->Instance->PTPTSCR |= ETH_PTPTSCR_TSARU;
 //    ETH_SetPTPTimeStampAddend(ADJ_FREQ_BASE_ADDEND);
 //    ETH_EnablePTPTimeStampAddend();
 
     /* Poll the Time stamp control register until bit 5 is cleared. */
-    while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSARU));
+    while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSARU);
 //    while(ETH_GetPTPFlagStatus(ETH_PTP_FLAG_TSARU) == SET);
 
 	/* To select the Fine correction method (if required),
 	* program Time stamp control register  bit 1. */
-	SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSFCU);
+	heth->Instance->PTPTSCR |= ETH_PTPTSCR_TSFCU;
 	//  ETH_PTPUpdateMethodConfig(UpdateMethod);
 
   } else
@@ -811,14 +809,14 @@ static void ETH_PTPStart(ETH_HandleTypeDef * heth) {
 
   /* Program the Time stamp high update and Time stamp low update registers
    * with the appropriate time value. */
-  WRITE_REG(heth->Instance->PTPTSLUR, 0);
-  WRITE_REG(heth->Instance->PTPTSHUR, 0);
+  heth->Instance->PTPTSLUR = 0;
+  heth->Instance->PTPTSHUR = 0;
 //  ETH_SetPTPTimeStampUpdate(ETH_PTP_PositiveTime, 0, 0);
 
   /* Set Time stamp control register bit 2 (Time stamp init). */
-  while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSSTI));
-  SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSSTI);
-  while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSSTI));
+  while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSSTI);
+  heth->Instance->PTPTSCR |= ETH_PTPTSCR_TSSTI;
+  while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSSTI);
 //  ETH_InitializePTPTimeStamp();
 
   /* The Time stamp counter starts operation as soon as it is initialized
@@ -826,17 +824,17 @@ static void ETH_PTPStart(ETH_HandleTypeDef * heth) {
 
   /* Enable the MAC receiver and transmitter for proper time stamping. ETH_Start(); */
   //enhanced descriptors
-  SET_BIT((heth->Instance)->DMABMR, ETH_DMABMR_EDE);
+  heth->Instance->DMABMR |= ETH_DMABMR_EDE;
 
   //all received frames
-  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSARFE);
+//  heth->Instance->PTPTSCR |= ETH_PTPTSSR_TSSARFE;
 //  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSPTPOEFE);
   //1588v2
-  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSPTPPSV2E);
+  heth->Instance->PTPTSCR |= ETH_PTPTSSR_TSPTPPSV2E;
 
-  SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_PAM);
+  heth->Instance->MACFFR |= ETH_MACFFR_PAM;
 
-  SET_BIT((heth->Instance)->PTPTSCR, ETH_PTPTSSR_TSSIPV4FE);
+  heth->Instance->PTPTSCR |= ETH_PTPTSSR_TSSIPV4FE;
 //  SET_BIT((heth->Instance)->MACFFR, ETH_MACFFR_RA);
 
 //  TargetTime_Init(heth);
@@ -875,10 +873,11 @@ void ETH_PTPTime_AdjFreq(ETH_HandleTypeDef * heth, int32_t Adj)
     addend = ((((275LL * Adj)>>8) * (ADJ_FREQ_BASE_ADDEND>>24))>>6) + ADJ_FREQ_BASE_ADDEND;
 
     /* Reprogram the Time stamp addend register with new Rate value and set ETH_TPTSCR */
-    WRITE_REG(heth->Instance->PTPTSAR, (uint32_t)addend);
-    while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSARU));
-    SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSARU);
-    while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSARU));
+    heth->Instance->PTPTSAR =  (uint32_t)addend;
+//    heth->Instance->PTPTSAR =  Adj + ADJ_FREQ_BASE_ADDEND;
+    while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSARU);
+    heth->Instance->PTPTSCR |= ETH_PTPTSCR_TSARU;
+    while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSARU);
 }
 
 /*******************************************************************************
@@ -911,27 +910,27 @@ void ETH_PTPTime_UpdateOffset(ETH_HandleTypeDef * heth, struct ptptime_t * timeo
     SubSecondValue = ETH_PTPNanoSecond2SubSecond(NanoSecondValue);
 
     /* read old addend register value*/
-    addend = READ_REG(heth->Instance->PTPTSAR);
+    addend = heth->Instance->PTPTSAR;
 
-    while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSSTU));
-    while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSSTI));
+    while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSSTU);
+    while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSSTI);
 
     /* Write the offset (positive or negative) in the Time stamp update high and low registers. */
-    WRITE_REG(heth->Instance->PTPTSHUR, SecondValue);
-    WRITE_REG(heth->Instance->PTPTSLUR, Sign | SubSecondValue);
+    heth->Instance->PTPTSHUR = SecondValue;
+    heth->Instance->PTPTSLUR = Sign | SubSecondValue;
     /* Set bit 3 (TSSTU) in the Time stamp control register. */
-    SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSSTU);
+    heth->Instance->PTPTSCR |= ETH_PTPTSCR_TSSTU;
     /* The value in the Time stamp update registers is added to or subtracted from the system */
     /* time when the TSSTU bit is cleared. */
-    while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSSTU));
+    while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSSTU);
 
     /* write back old addend register value */
-	WRITE_REG(heth->Instance->PTPTSAR, addend);
-	while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSARU));
-	SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSARU);
+	heth->Instance->PTPTSAR =  addend;
+	while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSARU);
+	heth->Instance->PTPTSCR |= ETH_PTPTSCR_TSARU;
 
     /* Poll the Time stamp control register until bit 5 is cleared. */
-    while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSARU));
+    while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSARU);
 }
 
 /*******************************************************************************
@@ -963,20 +962,20 @@ void ETH_PTPTime_SetTime(ETH_HandleTypeDef * heth, struct ptptime_t * timestamp)
     SubSecondValue = ETH_PTPNanoSecond2SubSecond(NanoSecondValue);
 
     /* Write the offset (positive or negative) in the Time stamp update high and low registers. */
-    WRITE_REG(heth->Instance->PTPTSHUR, SecondValue);
-    WRITE_REG(heth->Instance->PTPTSLUR, Sign | SubSecondValue);
+    heth->Instance->PTPTSHUR = SecondValue;
+    heth->Instance->PTPTSLUR = Sign | SubSecondValue;
     /* Set Time stamp control register bit 2 (Time stamp init). */
-    while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSSTI));
-    SET_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSSTI);
+    while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSSTI);
+    heth->Instance->PTPTSCR |= ETH_PTPTSCR_TSSTI;
     /* The Time stamp counter starts operation as soon as it is initialized
      * with the value written in the Time stamp update register. */
-    while(READ_BIT(heth->Instance->PTPTSCR, ETH_PTPTSCR_TSSTI));
+    while(heth->Instance->PTPTSCR & ETH_PTPTSCR_TSSTI);
 }
 
 
 void ETH_PTPTime_GetTime(ETH_HandleTypeDef * heth, struct ptptime_t * timestamp) {
-  timestamp->tv_nsec = ETH_PTPSubSecond2NanoSecond(READ_REG(heth->Instance->PTPTSLR));
-  timestamp->tv_sec = READ_REG(heth->Instance->PTPTSHR);
+  timestamp->tv_nsec = ETH_PTPSubSecond2NanoSecond(heth->Instance->PTPTSLR);
+  timestamp->tv_sec = heth->Instance->PTPTSHR;
 }
 
 /* USER CODE END 7 */

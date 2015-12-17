@@ -179,7 +179,7 @@ static void ETH_FlushTransmitFIFO(ETH_HandleTypeDef *heth);
 HAL_StatusTypeDef HAL_ETH_Init(ETH_HandleTypeDef *heth)
 {
   uint32_t tmpreg1 = 0, phyreg = 0;
-  uint32_t hclk = 60000000;
+  uint32_t hclk = 72000000;
   uint32_t tickstart = 0;
   uint32_t err = ETH_SUCCESS;
   
@@ -987,7 +987,7 @@ void HAL_ETH_IRQHandler(ETH_HandleTypeDef *heth)
   /* Clear the interrupt flags */
   __HAL_ETH_DMA_CLEAR_IT(heth, ETH_DMA_IT_NIS);
   __HAL_ETH_DMA_CLEAR_IT(heth, ETH_DMA_FLAG_TST);
-  READ_REG(heth->Instance->PTPTSSR);
+  //READ_REG(heth->Instance->PTPTSSR);
   
   /* ETH DMA Error */
   if(__HAL_ETH_DMA_GET_FLAG(heth, ETH_DMA_FLAG_AIS))
