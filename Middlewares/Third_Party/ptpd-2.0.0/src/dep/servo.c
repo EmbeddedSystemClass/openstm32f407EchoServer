@@ -267,7 +267,7 @@ void updateClock(PtpClock *ptpClock)
                 getTime(&timeTmp);
                 subTime(&timeTmp, &timeTmp, &ptpClock->currentDS.offsetFromMaster);
                 setTime(&timeTmp);
-//                initClock(ptpClock);
+                initClock(ptpClock);
             }
             else
             {

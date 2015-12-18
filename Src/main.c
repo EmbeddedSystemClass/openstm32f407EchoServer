@@ -115,12 +115,12 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityHigh, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  osThreadDef(LED4, ToggleLed4, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+  osThreadDef(LED4, ToggleLed4, osPriorityLow, 0, configMINIMAL_STACK_SIZE);
   osThreadCreate(osThread(LED4), NULL);
 
 //  osThreadDef(PTPD, PtpdPeriodicTask, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
@@ -368,7 +368,7 @@ void StartDefaultTask(void const * argument)
   for(;;)
   {
 	ptpd_Periodic_Handle(HAL_GetTick());
-//    osDelay(1);
+    osDelay(10);
   }
   /* USER CODE END 5 */ 
 }

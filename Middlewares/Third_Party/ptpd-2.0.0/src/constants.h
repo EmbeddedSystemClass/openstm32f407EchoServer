@@ -33,10 +33,10 @@
 #define DEFAULT_UTC_VALID               FALSE
 #define DEFAULT_PDELAYREQ_INTERVAL      -4 /* -4 in 802.1AS */
 #define DEFAULT_DELAYREQ_INTERVAL       -4 /* from DEFAULT_SYNC_INTERVAL to DEFAULT_SYNC_INTERVAL + 5 */
-#define DEFAULT_SYNC_INTERVAL           -7 /* -7 in 802.1AS */
+#define DEFAULT_SYNC_INTERVAL           -4 /* -7 in 802.1AS */
 #define DEFAULT_SYNC_RECEIPT_TIMEOUT    3
 #define DEFAULT_ANNOUNCE_RECEIPT_TIMEOUT 6 /* 3 by default */
-#define DEFAULT_QUALIFICATION_TIMEOUT   -9 /* DEFAULT_ANNOUNCE_INTERVAL + N */
+#define DEFAULT_QUALIFICATION_TIMEOUT   3//-9 /* DEFAULT_ANNOUNCE_INTERVAL + N */
 #define DEFAULT_FOREIGN_MASTER_TIME_WINDOW 4
 #define DEFAULT_FOREIGN_MASTER_THRESHOLD 2
 #define DEFAULT_CLOCK_CLASS             248
@@ -57,7 +57,7 @@
 #define DEFAULT_UNCALIBRATED_OFFSET_NS  1000000 /* offset from master > 1000us -> uncalibrated */
 #define MAX_ADJ_OFFSET_NS				100000000 /* max offset to try to adjust it < 100ms*/
 
-/* features, only change to refelect changes in implementation */
+/* features, only change to reflect changes in implementation */
 #define NUMBER_PORTS       1
 #define VERSION_PTP        2
 #define BOUNDARY_CLOCK     FALSE
