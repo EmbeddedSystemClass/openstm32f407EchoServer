@@ -64,12 +64,8 @@
 #define NO_SYS 0
 /*----- Value in opt.h for MEM_ALIGNMENT: 1 -----*/
 #define MEM_ALIGNMENT 4
-/*----- Default Value for MEMP_NUM_SYS_TIMEOUT: 5 -*/
-#define MEMP_NUM_SYS_TIMEOUT 3
 /*----- Value in opt.h for LWIP_ETHERNET: (LWIP_ARP || PPPOE_SUPPORT) -*/
 #define LWIP_ETHERNET 1
-/*----- Default Value for DHCP_DOES_ARP_CHECK: 1 -*/
-#define DHCP_DOES_ARP_CHECK 0
 /*----- Value in opt.h for TCPIP_THREAD_STACKSIZE: 0 -----*/
 #define TCPIP_THREAD_STACKSIZE 1024
 /*----- Value in opt.h for TCPIP_THREAD_PRIO: 1 -----*/

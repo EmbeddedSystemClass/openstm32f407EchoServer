@@ -40,21 +40,37 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
+
+DAC_HandleTypeDef hdac;
+
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+
+/* Variable used to get converted value */
+__IO uint16_t uhADCxConvertedValue = 0;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
+static void MX_ADC1_Init(void);
+static void MX_DAC_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+
 static void ToggleLed4(void const * argument);
+static void BatteryVoltageMonitor(void const * argument);
+static void Error_Handler(void);
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle);
+
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -78,6 +94,9 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_ADC1_Init();
+  MX_DAC_Init();
 
   /* USER CODE BEGIN 2 */
   /* USER CODE END 2 */
@@ -96,13 +115,18 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityHigh, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  osThreadDef(LED4, ToggleLed4, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+
+  osThreadDef(LED4, ToggleLed4, osPriorityLow, 0, configMINIMAL_STACK_SIZE);
   osThreadCreate(osThread(LED4), NULL);
+
+  osThreadDef(BATTERYADC1, BatteryVoltageMonitor, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+  osThreadCreate(osThread(BATTERYADC1), NULL);
+
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -167,6 +191,69 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+/* ADC1 init function */
+void MX_ADC1_Init(void)
+{
+
+  ADC_ChannelConfTypeDef sConfig;
+
+    /**Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
+    */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCKPRESCALER_PCLK_DIV2;
+  hadc1.Init.Resolution = ADC_RESOLUTION12b;
+  hadc1.Init.ScanConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.EOCSelection = EOC_SINGLE_CONV;
+  HAL_ADC_Init(&hadc1);
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Channel = ADC_CHANNEL_8;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+
+}
+
+/* DAC init function */
+void MX_DAC_Init(void)
+{
+
+  DAC_ChannelConfTypeDef sConfig;
+
+    /**DAC Initialization 
+    */
+  hdac.Instance = DAC;
+  HAL_DAC_Init(&hdac);
+
+    /**DAC channel OUT1 config 
+    */
+  sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
+  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+  HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1);
+
+}
+
+/** 
+  * Enable DMA controller clock
+  */
+void MX_DMA_Init(void) 
+{
+  /* DMA controller clock enable */
+  __DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+
+}
+
 /** Configure pins as 
         * Analog 
         * Input 
@@ -195,6 +282,7 @@ void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
 static void ToggleLed4(void const * argument)
 {
 	for(;;)
@@ -203,6 +291,52 @@ static void ToggleLed4(void const * argument)
 		osDelay(100);
 	}
 }
+
+static void BatteryVoltageMonitor(void const * argument)
+{
+
+  /*##-3- Start the conversion process and enable interrupt ##################*/
+  if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&uhADCxConvertedValue, 1) != HAL_OK)
+  {
+    /* Start Conversation Error */
+    Error_Handler();
+  }
+
+  /* Infinite loop */
+  while (1)
+  {
+	  osDelay(1);
+  }
+
+}
+
+/**
+  * @brief  This function is executed in case of error occurrence.
+  * @param  None
+  * @retval None
+  */
+static void Error_Handler(void)
+{
+  /* Turn LED5 on */
+//  BSP_LED_On(LED5);
+  while(1)
+  {
+  }
+}
+
+/**
+  * @brief  Conversion complete callback in non blocking mode
+  * @param  AdcHandle : AdcHandle handle
+  * @note   This example shows a simple way to report end of conversion, and
+  *         you can add your own implementation.
+  * @retval None
+  */
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
+{
+  /* Turn LED4 on: Transfer process is correct */
+//  BSP_LED_On(LED4);
+}
+
 /* USER CODE END 4 */
 
 /* StartDefaultTask function */
