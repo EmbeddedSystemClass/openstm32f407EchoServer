@@ -100,13 +100,6 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 
-  if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&uhADCxConvertedValue, 1) != HAL_OK)
-  {
-    /* Start Conversation Error */
-    Error_Handler();
-  }
-
-
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -132,8 +125,8 @@ int main(void)
   osThreadDef(LED4, ToggleLed4, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
   osThreadCreate(osThread(LED4), NULL);
 
-//  osThreadDef(BATTERYADC1, BatteryVoltageMonitor, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-//  osThreadCreate(osThread(BATTERYADC1), NULL);
+  osThreadDef(BATTERYADC1, BatteryVoltageMonitor, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+  osThreadCreate(osThread(BATTERYADC1), NULL);
 
   /* USER CODE END RTOS_THREADS */
 
@@ -354,13 +347,17 @@ void StartDefaultTask(void const * argument)
   MX_LWIP_Init();
 
   /* USER CODE BEGIN 5 */
+
   /* tcp echo server Init */
   tcp_echoserver_init();
+
   /* Infinite loop */
   for(;;)
   {
-	  osDelay(1);
+	  sendVoltage(&hadc1);
+	  osDelay(100);
   }
+
   /* USER CODE END 5 */ 
 }
 

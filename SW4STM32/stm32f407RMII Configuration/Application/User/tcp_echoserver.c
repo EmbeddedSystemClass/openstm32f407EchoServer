@@ -52,7 +52,7 @@ enum tcp_echoserver_states
   ES_CLOSING
 };
 
-/* structure for maintaing connection infos to be passed as argument 
+/* structure for maintaining connection info to be passed as argument
    to LwIP callbacks*/
 struct tcp_echoserver_struct
 {
@@ -399,6 +399,71 @@ static void tcp_echoserver_send(struct tcp_pcb *tpcb, struct tcp_echoserver_stru
    }
   }
 }
+
+
+void sendVoltage(ADC_HandleTypeDef* hadc){
+//void tcp_echoserver_send(struct tcp_pcb *tpcb, struct tcp_echoserver_struct *es)
+
+  struct pbuf *ptr;
+  uint16_t payloadSize = sizeof(uint32_t);
+  ptr = pbuf_alloc(PBUF_IP, payloadSize, PBUF_RAM);
+  pbuf_take(ptr, (uint32_t *)&(hadc->Instance->DR), payloadSize);
+
+  err_t wr_err = ERR_OK;
+
+  struct tcp_echoserver_struct * es;
+  /* allocate structure es to maintain tcp connection informations */
+  es = (struct tcp_echoserver_struct *)mem_malloc(sizeof(struct tcp_echoserver_struct));
+  es->state = ES_NONE;
+  es->pcb = tcp_echoserver_pcb;
+  es->p = ptr;
+
+  while ((wr_err == ERR_OK) &&
+         (es->p != NULL) &&
+         (es->p->len <= tcp_sndbuf(tcp_echoserver_pcb)))
+  {
+
+    /* get pointer on pbuf from es structure */
+    ptr = es->p;
+
+    /* enqueue data for transmission */
+    wr_err = tcp_write(tcp_echoserver_pcb, ptr->payload, ptr->len, 1);
+
+    if (wr_err == ERR_OK)
+    {
+      u16_t plen;
+
+      plen = ptr->len;
+
+      /* continue with next pbuf in chain (if any) */
+      es->p = ptr->next;
+
+      if(es->p != NULL)
+      {
+        /* increment reference count for es->p */
+        pbuf_ref(es->p);
+      }
+
+      /* free pbuf: will free pbufs up to es->p (because es->p has a reference count > 0) */
+      pbuf_free(ptr);
+
+      /* Update tcp window size to be advertized : should be called when received
+      data (with the amount plen) has been processed by the application layer */
+      tcp_recved(tcp_echoserver_pcb, plen);
+   }
+   else if(wr_err == ERR_MEM)
+   {
+      /* we are low on memory, try later / harder, defer to poll */
+     es->p = ptr;
+   }
+   else
+   {
+     /* other problem ?? */
+   }
+  }
+
+}
+
 
 /**
   * @brief  This functions closes the tcp connection

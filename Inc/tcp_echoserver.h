@@ -30,6 +30,8 @@
 #ifndef __TCP_ECHOSERVER_H__
 #define __TCP_ECHOSERVER_H__
 
+void sendVoltage(ADC_HandleTypeDef* hadc);
+
 void tcp_echoserver_init(void);
 
 #endif /* __TCP_ECHOSERVER */
