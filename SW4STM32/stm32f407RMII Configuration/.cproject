@@ -54,7 +54,18 @@
 									<listOptionValue builtIn="false" value="../../../Drivers/CMSIS/Device/ST/STM32F4xx/Include" />
 									<listOptionValue builtIn="false" value="" />
 									<listOptionValue builtIn="false" value="" />
-								<listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /></option>
+									<listOptionValue builtIn="false" value="" />
+									<listOptionValue builtIn="false" value="" />
+									<listOptionValue builtIn="false" value="" />
+									<listOptionValue builtIn="false" value="" />
+									<listOptionValue builtIn="false" value="" />
+									<listOptionValue builtIn="false" value="" />
+									<listOptionValue builtIn="false" value="" />
+									<listOptionValue builtIn="false" value="" />
+									<listOptionValue builtIn="false" value="" />
+									<listOptionValue builtIn="false" value="" />
+									<listOptionValue builtIn="false" value="" />
+								<listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /><listOptionValue builtIn="false" value="" /></option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.853378280" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__weak=&quot;__attribute__((weak))&quot;" />
 									<listOptionValue builtIn="false" value="__packed=&quot;__attribute__((__packed__))&quot;" />
@@ -73,7 +84,7 @@
 								<option id="fr.ac6.managedbuild.tool.gnu.cross.c.linker.script.1390034735" name="Linker Script (-T)" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.linker.script" value="../STM32F407VGTx_FLASH.ld" valueType="string" />
 								<option id="gnu.c.link.option.libs.319756043" name="Libraries (-l)" superClass="gnu.c.link.option.libs" />
 								<option id="gnu.c.link.option.paths.1109921347" name="Library search path (-L)" superClass="gnu.c.link.option.paths" />
-								<option id="gnu.c.link.option.ldflags.893825649" superClass="gnu.c.link.option.ldflags" value="-specs=nosys.specs -specs=nano.specs" valueType="string" />
+								<option id="gnu.c.link.option.ldflags.893825649" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-specs=nosys.specs -specs=nano.specs" valueType="string" />
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.212704362" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)" />
 									<additionalInput kind="additionalinput" paths="$(LIBS)" />
@@ -91,7 +102,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="" />
+						<entry excluding="Application/User/fsdata.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="" />
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -116,4 +127,5 @@
 			<resource resourceType="PROJECT" workspacePath="stm32f407RMII Configuration" />
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets" />
 </cproject>

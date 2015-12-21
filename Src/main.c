@@ -36,7 +36,7 @@
 #include "lwip.h"
 
 /* USER CODE BEGIN Includes */
-#include "tcp_echoserver.h"
+#include "httpserver-socket.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -70,6 +70,7 @@ static void ToggleLed4(void const * argument);
 static void BatteryVoltageMonitor(void const * argument);
 static void Error_Handler(void);
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle);
+uint16_t getVoltage();
 
 /* USER CODE END PFP */
 
@@ -116,7 +117,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityHigh, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -311,6 +312,10 @@ static void BatteryVoltageMonitor(void const * argument)
 
 }
 
+uint16_t getVoltage(){
+	return uhADCxConvertedValue;
+}
+
 /**
   * @brief  This function is executed in case of error occurrence.
   * @param  None
@@ -347,16 +352,14 @@ void StartDefaultTask(void const * argument)
   MX_LWIP_Init();
 
   /* USER CODE BEGIN 5 */
-
-  /* tcp echo server Init */
-  tcp_echoserver_init();
+  voltage_server_socket();
 
   /* Infinite loop */
-  for(;;)
-  {
-	  sendVoltage(&hadc1);
-	  osDelay(100);
-  }
+//  for(;;)
+//  {
+	  //sendVoltage(&hadc1);
+//	  osDelay(100);
+//  }
 
   /* USER CODE END 5 */ 
 }

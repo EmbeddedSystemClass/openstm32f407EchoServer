@@ -45,9 +45,16 @@
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 
+void MemManage_Handler(void);
+void BusFault_Handler(void);
+void UsageFault_Handler(void);
+void DebugMon_Handler(void);
 void SysTick_Handler(void);
+void PVD_IRQHandler(void);
+void FLASH_IRQHandler(void);
 void DMA2_Stream0_IRQHandler(void);
 void ETH_IRQHandler(void);
+void ETH_WKUP_IRQHandler(void);
 
 #ifdef __cplusplus
 }
