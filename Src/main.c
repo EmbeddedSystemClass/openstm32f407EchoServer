@@ -44,11 +44,20 @@ ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
 DAC_HandleTypeDef hdac;
+DMA_HandleTypeDef hdma_dac1;
+
+TIM_HandleTypeDef htim6;
 
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+
+DAC_ChannelConfTypeDef sConfig;
+
+const uint8_t aEscalator8bit[6] = {0x0, 0x33, 0x66, 0x99, 0xCC, 0xFF};
+__IO uint8_t ubSelectedWavesForm = 1;
+__IO uint8_t ubKeyPressed = SET;
 
 /* Variable used to get converted value */
 __IO uint16_t uhADCxConvertedValue = 0;
@@ -61,6 +70,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_DAC_Init(void);
+static void MX_TIM6_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -68,9 +78,13 @@ void StartDefaultTask(void const * argument);
 
 static void ToggleLed4(void const * argument);
 static void BatteryVoltageMonitor(void const * argument);
+static void BatteryVoltageController(void const * argument);
 static void Error_Handler(void);
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle);
 uint16_t getVoltage();
+
+static void DAC_Ch1_TriangleConfig(void);
+static void DAC_Ch1_EscalatorConfig(void);
 
 /* USER CODE END PFP */
 
@@ -97,9 +111,16 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_ADC1_Init();
-  MX_DAC_Init();
+//  MX_DAC_Init();
+  MX_TIM6_Init();
 
   /* USER CODE BEGIN 2 */
+
+  /*##-1- Configure the DAC peripheral #######################################*/
+  hdac.Instance = DAC;
+
+  /*##-2- Enable TIM peripheral counter ######################################*/
+  HAL_TIM_Base_Start(&htim6);
 
   /* USER CODE END 2 */
 
@@ -128,6 +149,9 @@ int main(void)
 
   osThreadDef(BATTERYADC1, BatteryVoltageMonitor, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
   osThreadCreate(osThread(BATTERYADC1), NULL);
+
+  osThreadDef(BATTERYDAC1, BatteryVoltageController, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+  osThreadCreate(osThread(BATTERYDAC1), NULL);
 
   /* USER CODE END RTOS_THREADS */
 
@@ -223,22 +247,109 @@ void MX_ADC1_Init(void)
 
 }
 
-/* DAC init function */
-void MX_DAC_Init(void)
+static void DAC_Ch1_EscalatorConfig(void)
+{
+  /*##-1- Initialize the DAC peripheral ######################################*/
+  if(HAL_DAC_Init(&hdac) != HAL_OK)
+  {
+    /* Initialization Error */
+    Error_Handler();
+  }
+
+  /*##-1- DAC channel1 Configuration #########################################*/
+  sConfig.DAC_Trigger = DAC_TRIGGER_T6_TRGO;
+  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+
+  if(HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+  {
+    /* Channel configuration Error */
+    Error_Handler();
+  }
+
+  /*##-2- Enable DAC Channel1 and associated DMA #############################*/
+  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)aEscalator8bit, 6, DAC_ALIGN_8B_R) != HAL_OK)
+  {
+    /* Start DMA Error */
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief  DAC Channel1 Triangle Configuration
+  * @param  None
+  * @retval None
+  */
+static void DAC_Ch1_TriangleConfig(void)
+{
+  /*##-1- Initialize the DAC peripheral ######################################*/
+  if(HAL_DAC_Init(&hdac) != HAL_OK)
+  {
+    /* Initialization Error */
+    Error_Handler();
+  }
+
+  /*##-2- DAC channel2 Configuration #########################################*/
+  sConfig.DAC_Trigger = DAC_TRIGGER_T6_TRGO;
+  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+
+  if(HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+  {
+    /* Channel configuration Error */
+    Error_Handler();
+  }
+
+  /*##-3- DAC channel2 Triangle Wave generation configuration ################*/
+//  if(HAL_DACEx_TriangleWaveGenerate(&hdac, DAC_CHANNEL_1, DAC_TRIANGLEAMPLITUDE_1023) != HAL_OK)
+  if(HAL_DACEx_NoiseWaveGenerate(&hdac, DAC_CHANNEL_1, DAC_TRIANGLEAMPLITUDE_1023) != HAL_OK)
+  {
+    /* Triangle wave generation Error */
+    Error_Handler();
+  }
+
+  /*##-4- Enable DAC Channel1 ################################################*/
+  if(HAL_DAC_Start(&hdac, DAC_CHANNEL_1) != HAL_OK)
+  {
+    /* Start Error */
+    Error_Handler();
+  }
+
+  /*##-5- Set DAC channel1 DHR12RD register ################################################*/
+  if(HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0x100) != HAL_OK)
+  {
+    /* Setting value Error */
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief  EXTI line detection callbacks
+  * @param  GPIO_Pin: Specifies the pins connected EXTI line
+  * @retval None
+  */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  /* Change the wave */
+    ubKeyPressed = 1;
+
+  /* Change the selected waves forms */
+  ubSelectedWavesForm = !ubSelectedWavesForm;
+}
+
+/* TIM6 init function */
+void MX_TIM6_Init(void)
 {
 
-  DAC_ChannelConfTypeDef sConfig;
+  TIM_MasterConfigTypeDef sMasterConfig;
 
-    /**DAC Initialization 
-    */
-  hdac.Instance = DAC;
-  HAL_DAC_Init(&hdac);
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 0;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 0x7FF;
+  HAL_TIM_Base_Init(&htim6);
 
-    /**DAC channel OUT1 config 
-    */
-  sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
-  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
-  HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1);
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig);
 
 }
 
@@ -249,8 +360,11 @@ void MX_DMA_Init(void)
 {
   /* DMA controller clock enable */
   __DMA2_CLK_ENABLE();
+  __DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
@@ -274,12 +388,22 @@ void MX_GPIO_Init(void)
   __GPIOB_CLK_ENABLE();
   __GPIOD_CLK_ENABLE();
 
+  /*Configure GPIO pin : PA0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /*Configure GPIO pin : LED4_Pin */
   GPIO_InitStruct.Pin = LED4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   HAL_GPIO_Init(LED4_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
 }
 
@@ -314,6 +438,42 @@ static void BatteryVoltageMonitor(void const * argument)
 
 uint16_t getVoltage(){
 	return uhADCxConvertedValue;
+}
+
+static void BatteryVoltageController(void const * argument)
+{
+      HAL_DAC_DeInit(&hdac);
+      DAC_Ch1_TriangleConfig();
+
+  /* Infinite loop */
+  while (1)
+  {
+	  osDelay(1);
+    /* If the USER Button is pressed */
+//    if (ubKeyPressed != RESET)
+//    {
+//      HAL_DAC_DeInit(&hdac);
+
+//      /* Select waves forms according to the USER Button status */
+//      if (ubSelectedWavesForm == 1)
+//      {
+        /* The triangle wave has been selected */
+
+        /* Triangle Wave generator -------------------------------------------*/
+//        DAC_Ch1_TriangleConfig();
+//      }
+//      else
+//      {
+//        /* The escalator wave has been selected */
+//
+//        /* Escalator Wave generator ------------------------------------------*/
+//        DAC_Ch1_EscalatorConfig();
+//      }
+//
+//      ubKeyPressed = RESET;
+//    }
+  }
+
 }
 
 /**
