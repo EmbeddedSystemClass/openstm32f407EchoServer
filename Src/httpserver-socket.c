@@ -42,7 +42,6 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
-/* Format of dynamic web page: the page header */
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -51,22 +50,25 @@
   * @param conn: connection socket 
   * @retval None
   */
-void voltage_server(int conn)
+void broadcastVoltage(int conn)
 {
-  int buflen = 1500;
-  unsigned char recv_buffer[1500];
-  uint16_t voltage = getVoltage();
+  uint32_t oldTime = 0;
+  uint32_t voltagePacket[3];
+  memcpy(voltagePacket, getVoltagePacket(voltagePacket), sizeof(voltagePacket));
 
-				
   /* Read in the request */
 //  read(conn, recv_buffer, buflen);
 
   int goodWrite = 1;
-  while(goodWrite)
+  while(goodWrite > 0)
   {
-	  voltage = getVoltage();
-	  goodWrite = send(conn, (uint16_t *)&voltage, (size_t)sizeof(uint16_t), 1);
-	  osDelay(100);
+	  if(voltagePacket[1] > oldTime)
+	  {
+		  goodWrite = send(conn, (uint32_t *)voltagePacket, (size_t)(sizeof(uint32_t) * 3), 1);
+		  oldTime = voltagePacket[1];
+	  }
+	  memcpy(voltagePacket, getVoltagePacket(voltagePacket), sizeof(voltagePacket));
+	  osDelay(1);
   }
 
   /* Close connection socket */
@@ -107,7 +109,7 @@ void voltage_server_socket()
   while (1) 
   {
     newconn = accept(sock, (struct sockaddr *)&remotehost, (socklen_t *)&size);
-    voltage_server(newconn);
+    broadcastVoltage(newconn);
   }
 }
 

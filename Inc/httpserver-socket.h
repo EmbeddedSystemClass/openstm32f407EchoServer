@@ -37,7 +37,7 @@
 
 //void http_server_socket_init(void);
 void voltage_server_socket();
-uint16_t getVoltage();
+uint32_t * getVoltagePacket();
 
 #endif /* __HTTPSERVER_SOCKET_H__ */
 

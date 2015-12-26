@@ -61,6 +61,9 @@ __IO uint8_t ubKeyPressed = SET;
 
 /* Variable used to get converted value */
 __IO uint16_t uhADCxConvertedValue = 0;
+uint32_t sampleCounter = 0;
+uint32_t sampleMultiplier = 0;
+uint32_t voltagePacket[3] = {0x0000AA55, 0, 0};
 
 /* USER CODE END PV */
 
@@ -81,7 +84,6 @@ static void BatteryVoltageMonitor(void const * argument);
 static void BatteryVoltageController(void const * argument);
 static void Error_Handler(void);
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle);
-uint16_t getVoltage();
 
 static void DAC_Ch1_TriangleConfig(void);
 static void DAC_Ch1_EscalatorConfig(void);
@@ -299,8 +301,8 @@ static void DAC_Ch1_TriangleConfig(void)
   }
 
   /*##-3- DAC channel2 Triangle Wave generation configuration ################*/
-//  if(HAL_DACEx_TriangleWaveGenerate(&hdac, DAC_CHANNEL_1, DAC_TRIANGLEAMPLITUDE_1023) != HAL_OK)
-  if(HAL_DACEx_NoiseWaveGenerate(&hdac, DAC_CHANNEL_1, DAC_TRIANGLEAMPLITUDE_1023) != HAL_OK)
+  if(HAL_DACEx_TriangleWaveGenerate(&hdac, DAC_CHANNEL_1, DAC_TRIANGLEAMPLITUDE_1023) != HAL_OK)
+//  if(HAL_DACEx_NoiseWaveGenerate(&hdac, DAC_CHANNEL_1, DAC_TRIANGLEAMPLITUDE_1023) != HAL_OK)
   {
     /* Triangle wave generation Error */
     Error_Handler();
@@ -436,10 +438,6 @@ static void BatteryVoltageMonitor(void const * argument)
 
 }
 
-uint16_t getVoltage(){
-	return uhADCxConvertedValue;
-}
-
 static void BatteryVoltageController(void const * argument)
 {
       HAL_DAC_DeInit(&hdac);
@@ -490,6 +488,13 @@ static void Error_Handler(void)
   }
 }
 
+
+uint32_t * getVoltagePacket()
+{
+	return voltagePacket;
+}
+
+
 /**
   * @brief  Conversion complete callback in non blocking mode
   * @param  AdcHandle : AdcHandle handle
@@ -499,8 +504,23 @@ static void Error_Handler(void)
   */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
 {
-  /* Turn LED4 on: Transfer process is correct */
-//  BSP_LED_On(LED4);
+    if(!(sampleCounter % 126))
+    {
+		voltagePacket[1] = sampleMultiplier;
+		voltagePacket[2] = (uint32_t) uhADCxConvertedValue;
+    	sampleMultiplier += 1;
+    }
+	sampleCounter += 1;
+}
+
+/**
+  * @brief  Regular conversion half DMA transfer callback in non blocking mode
+  * @param  hadc: pointer to a ADC_HandleTypeDef structure that contains
+  *         the configuration information for the specified ADC.
+  * @retval None
+  */
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
+{
 }
 
 /* USER CODE END 4 */
