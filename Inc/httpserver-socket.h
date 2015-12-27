@@ -31,13 +31,32 @@
 
 /* Includes ------------------------------------------------------------------*/
 /* Exported types ------------------------------------------------------------*/
+
+/**
+  * @brief Voltage and time buffer
+  */
+typedef struct
+{
+
+	uint32_t packetHeader;
+
+	uint32_t packetLength;
+	uint32_t packetCount;
+
+	uint32_t * buffer;
+	uint32_t bufferLength;
+
+} VoltageStruct;
+
 /* Exported constants --------------------------------------------------------*/
+#define VOLTAGE_BUFFER_LENGTH 6000
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 
 //void http_server_socket_init(void);
 void voltage_server_socket();
 uint32_t * getVoltagePacket();
+void broadcastVoltageAll();
 
 #endif /* __HTTPSERVER_SOCKET_H__ */
 

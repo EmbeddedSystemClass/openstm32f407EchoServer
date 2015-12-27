@@ -50,11 +50,41 @@
   * @param conn: connection socket 
   * @retval None
   */
+//void broadcastVoltage(int conn)
+//{
+//  uint32_t oldTime = 0;
+//  uint32_t voltagePacket[3];
+//  memcpy(voltagePacket, getVoltagePacket(voltagePacket), sizeof(voltagePacket));
+//
+//  /* Read in the request */
+////  read(conn, recv_buffer, buflen);
+//
+//  int goodWrite = 1;
+//  while(goodWrite > 0)
+//  {
+//	  if(voltagePacket[1] > oldTime)
+//	  {
+//		  goodWrite = send(conn, (uint32_t *)voltagePacket, (size_t)(sizeof(uint32_t) * 3), 1);
+//		  oldTime = voltagePacket[1];
+//	  }
+//	  memcpy(voltagePacket, getVoltagePacket(voltagePacket), sizeof(voltagePacket));
+//	  osDelay(10);
+//  }
+//
+//  /* Close connection socket */
+//  close(conn);
+//}
+
+/**
+  * @brief serve tcp connection
+  * @param conn: connection socket
+  * @retval None
+  */
 void broadcastVoltage(int conn)
 {
-  uint32_t oldTime = 0;
-  uint32_t voltagePacket[3];
-  memcpy(voltagePacket, getVoltagePacket(voltagePacket), sizeof(voltagePacket));
+  uint32_t * voltagePacket = getVoltagePacket();
+//  memcpy(voltagePacket, getVoltagePacket(), sizeof(uint32_t) * 1000);
+
 
   /* Read in the request */
 //  read(conn, recv_buffer, buflen);
@@ -62,17 +92,45 @@ void broadcastVoltage(int conn)
   int goodWrite = 1;
   while(goodWrite > 0)
   {
-	  if(voltagePacket[1] > oldTime)
-	  {
-		  goodWrite = send(conn, (uint32_t *)voltagePacket, (size_t)(sizeof(uint32_t) * 3), 1);
-		  oldTime = voltagePacket[1];
-	  }
-	  memcpy(voltagePacket, getVoltagePacket(voltagePacket), sizeof(voltagePacket));
+	  goodWrite = send(conn, (uint32_t *)voltagePacket, (size_t)(sizeof(uint32_t) * VOLTAGE_BUFFER_LENGTH), 1);
+	  voltagePacket = getVoltagePacket();
 	  osDelay(1);
   }
 
   /* Close connection socket */
   close(conn);
+}
+
+/**
+  * @brief serve tcp connection
+  * @param conn: connection socket
+  * @retval None
+  */
+void broadcastVoltageAll()
+{
+  uint32_t oldTime = 0;
+  uint32_t voltagePacket[3];
+  memcpy(voltagePacket, getVoltagePacket(), sizeof(voltagePacket));
+
+  /* Read in the request */
+//  read(conn, recv_buffer, buflen);
+
+  int goodWrite = 1;
+  int conn;
+  for(conn = 0; conn < MEMP_NUM_NETCONN; conn++)
+  {
+	  if(voltagePacket[1] > oldTime)
+	  {
+		  goodWrite = send(conn, (uint32_t *)voltagePacket, (size_t)(sizeof(uint32_t) * 3), 1);
+		  oldTime = voltagePacket[1];
+	  }
+	  memcpy(voltagePacket, getVoltagePacket(), sizeof(voltagePacket));
+	  if(goodWrite <= 0){
+		  /* Close connection socket */
+		  close(conn);
+	  }
+  }
+
 }
 
 /**
