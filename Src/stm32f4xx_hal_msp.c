@@ -54,23 +54,11 @@ void HAL_MspInit(void)
   HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 
   /* System interrupt init*/
-  /* MemoryManagement_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(MemoryManagement_IRQn, 0, 0);
-  /* BusFault_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(BusFault_IRQn, 0, 0);
-  /* UsageFault_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(UsageFault_IRQn, 0, 0);
-  /* DebugMonitor_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DebugMonitor_IRQn, 0, 0);
   /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
-  /* PVD_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(PVD_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(PVD_IRQn);
-
-  /* FLASH_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(FLASH_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(FLASH_IRQn);
+  /* RCC_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(RCC_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(RCC_IRQn);
 
   /* USER CODE BEGIN MspInit 1 */
 
@@ -183,18 +171,15 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef* hdac)
     hdma_dac1.Init.Direction = DMA_MEMORY_TO_PERIPH;
     hdma_dac1.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_dac1.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_dac1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    hdma_dac1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    hdma_dac1.Init.Mode = DMA_NORMAL;
-    hdma_dac1.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_dac1.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_dac1.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_dac1.Init.Mode = DMA_CIRCULAR;
+    hdma_dac1.Init.Priority = DMA_PRIORITY_HIGH;
     hdma_dac1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     HAL_DMA_Init(&hdma_dac1);
 
     __HAL_LINKDMA(hdac,DMA_Handle1,hdma_dac1);
 
-  /* Peripheral interrupt init*/
-    HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
   /* USER CODE BEGIN DAC_MspInit 1 */
 
   /* USER CODE END DAC_MspInit 1 */
@@ -220,16 +205,6 @@ void HAL_DAC_MspDeInit(DAC_HandleTypeDef* hdac)
 
     /* Peripheral DMA DeInit*/
     HAL_DMA_DeInit(hdac->DMA_Handle1);
-
-    /* Peripheral interrupt DeInit*/
-  /* USER CODE BEGIN DAC:TIM6_DAC_IRQn disable */
-    /**
-    * Uncomment the line below to disable the "TIM6_DAC_IRQn" interrupt
-    * Be aware, disabling shared interrupt may affect other IPs
-    */
-    /* HAL_NVIC_DisableIRQ(TIM6_DAC_IRQn); */
-  /* USER CODE END DAC:TIM6_DAC_IRQn disable */
-
   }
   /* USER CODE BEGIN DAC_MspDeInit 1 */
 
@@ -261,9 +236,6 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
   /* USER CODE END TIM6_MspInit 0 */
     /* Peripheral clock enable */
     __TIM6_CLK_ENABLE();
-  /* Peripheral interrupt init*/
-    HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
   /* USER CODE BEGIN TIM6_MspInit 1 */
 
   /* USER CODE END TIM6_MspInit 1 */
@@ -296,16 +268,6 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
   /* USER CODE END TIM6_MspDeInit 0 */
     /* Peripheral clock disable */
     __TIM6_CLK_DISABLE();
-
-    /* Peripheral interrupt DeInit*/
-  /* USER CODE BEGIN TIM6:TIM6_DAC_IRQn disable */
-    /**
-    * Uncomment the line below to disable the "TIM6_DAC_IRQn" interrupt
-    * Be aware, disabling shared interrupt may affect other IPs
-    */
-    /* HAL_NVIC_DisableIRQ(TIM6_DAC_IRQn); */
-  /* USER CODE END TIM6:TIM6_DAC_IRQn disable */
-
   /* USER CODE BEGIN TIM6_MspDeInit 1 */
 
   /* USER CODE END TIM6_MspDeInit 1 */

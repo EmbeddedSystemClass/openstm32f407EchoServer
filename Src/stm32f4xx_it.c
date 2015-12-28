@@ -45,77 +45,11 @@ extern void xPortSysTickHandler(void);
 extern ETH_HandleTypeDef heth;
 extern DMA_HandleTypeDef hdma_adc1;
 extern DMA_HandleTypeDef hdma_dac1;
-extern DAC_HandleTypeDef hdac;
 extern TIM_HandleTypeDef htim2;
-extern TIM_HandleTypeDef htim6;
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
 /******************************************************************************/
-
-/**
-* @brief This function handles Memory management fault.
-*/
-void MemManage_Handler(void)
-{
-  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
-  /* USER CODE END MemoryManagement_IRQn 0 */
-  while (1)
-  {
-  }
-  /* USER CODE BEGIN MemoryManagement_IRQn 1 */
-
-  /* USER CODE END MemoryManagement_IRQn 1 */
-}
-
-/**
-* @brief This function handles Pre-fetch fault, memory access fault.
-*/
-void BusFault_Handler(void)
-{
-  /* USER CODE BEGIN BusFault_IRQn 0 */
-
-  /* USER CODE END BusFault_IRQn 0 */
-  while (1)
-  {
-  }
-  /* USER CODE BEGIN BusFault_IRQn 1 */
-
-  /* USER CODE END BusFault_IRQn 1 */
-}
-
-/**
-* @brief This function handles Undefined instruction or illegal state.
-*/
-void UsageFault_Handler(void)
-{
-  /* USER CODE BEGIN UsageFault_IRQn 0 */
-
-  /* USER CODE END UsageFault_IRQn 0 */
-  while (1)
-  {
-  }
-  /* USER CODE BEGIN UsageFault_IRQn 1 */
-
-  /* USER CODE END UsageFault_IRQn 1 */
-}
-
-/**
-* @brief This function handles Debug monitor.
-*/
-void DebugMon_Handler(void)
-{
-  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
-
-  /* USER CODE END DebugMonitor_IRQn 0 */
-  while (1)
-  {
-  }
-  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
-
-  /* USER CODE END DebugMonitor_IRQn 1 */
-}
 
 /**
 * @brief This function handles System tick timer.
@@ -140,45 +74,16 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-* @brief This function handles PVD interrupt through EXTI line 16.
+* @brief This function handles RCC global interrupt.
 */
-void PVD_IRQHandler(void)
+void RCC_IRQHandler(void)
 {
-  /* USER CODE BEGIN PVD_IRQn 0 */
+  /* USER CODE BEGIN RCC_IRQn 0 */
 
-  /* USER CODE END PVD_IRQn 0 */
-  HAL_PWR_PVD_IRQHandler();
-  /* USER CODE BEGIN PVD_IRQn 1 */
+  /* USER CODE END RCC_IRQn 0 */
+  /* USER CODE BEGIN RCC_IRQn 1 */
 
-  /* USER CODE END PVD_IRQn 1 */
-}
-
-/**
-* @brief This function handles Flash global interrupt.
-*/
-void FLASH_IRQHandler(void)
-{
-  /* USER CODE BEGIN FLASH_IRQn 0 */
-
-  /* USER CODE END FLASH_IRQn 0 */
-  HAL_FLASH_IRQHandler();
-  /* USER CODE BEGIN FLASH_IRQn 1 */
-
-  /* USER CODE END FLASH_IRQn 1 */
-}
-
-/**
-* @brief This function handles EXTI line0 interrupt.
-*/
-void EXTI0_IRQHandler(void)
-{
-  /* USER CODE BEGIN EXTI0_IRQn 0 */
-
-  /* USER CODE END EXTI0_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
-  /* USER CODE BEGIN EXTI0_IRQn 1 */
-
-  /* USER CODE END EXTI0_IRQn 1 */
+  /* USER CODE END RCC_IRQn 1 */
 }
 
 /**
@@ -210,21 +115,6 @@ void TIM2_IRQHandler(void)
 }
 
 /**
-* @brief This function handles TIM6 global interrupt, DAC1 and DAC2 underrun error interrupts.
-*/
-void TIM6_DAC_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
-
-  /* USER CODE END TIM6_DAC_IRQn 0 */
-  HAL_DAC_IRQHandler(&hdac);
-  HAL_TIM_IRQHandler(&htim6);
-  /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
-
-  /* USER CODE END TIM6_DAC_IRQn 1 */
-}
-
-/**
 * @brief This function handles DMA2 stream0 global interrupt.
 */
 void DMA2_Stream0_IRQHandler(void)
@@ -250,20 +140,6 @@ void ETH_IRQHandler(void)
   /* USER CODE BEGIN ETH_IRQn 1 */
 
   /* USER CODE END ETH_IRQn 1 */
-}
-
-/**
-* @brief This function handles Ethernet wake-up interrupt through EXTI line 19.
-*/
-void ETH_WKUP_IRQHandler(void)
-{
-  /* USER CODE BEGIN ETH_WKUP_IRQn 0 */
-
-  /* USER CODE END ETH_WKUP_IRQn 0 */
-  HAL_ETH_IRQHandler(&heth);
-  /* USER CODE BEGIN ETH_WKUP_IRQn 1 */
-
-  /* USER CODE END ETH_WKUP_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

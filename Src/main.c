@@ -57,11 +57,9 @@ osThreadId defaultTaskHandle;
 /* Private variables ---------------------------------------------------------*/
 VoltageStruct voltageStruct;
 
-DAC_ChannelConfTypeDef sConfig;
+static DAC_ChannelConfTypeDef sConfig;
 
 const uint8_t aEscalator8bit[6] = {0x0, 0x33, 0x66, 0x99, 0xCC, 0xFF};
-__IO uint8_t ubSelectedWavesForm = 1;
-__IO uint8_t ubKeyPressed = SET;
 
 /* Variable used to get converted value */
 __IO uint16_t uhADCxConvertedValue = 0;
@@ -133,8 +131,7 @@ int main(void)
   /*##-2- Enable TIM peripheral counter ######################################*/
   HAL_TIM_Base_Start(&htim6);
 
-//  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)&aEscalator8bit, sizeof(uint32_t), DAC_ALIGN_12B_R) != HAL_OK)
-  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)&aEscalator8bit, 6, DAC_ALIGN_8B_R) != HAL_OK)
+  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)aEscalator8bit, 6, DAC_ALIGN_8B_R) != HAL_OK)
   {
     /* Start Error */
     Error_Handler();
@@ -142,11 +139,11 @@ int main(void)
 
   /*##-2- Start the TIM Base generation in interrupt mode ####################*/
   /* Start Channel1 */
-  if(HAL_TIM_Base_Start_IT(&htim2) != HAL_OK)
-  {
-    /* Starting Error */
-    Error_Handler();
-  }
+//  if(HAL_TIM_Base_Start_IT(&htim2) != HAL_OK)
+//  {
+//    /* Starting Error */
+//    Error_Handler();
+//  }
 
   /* USER CODE END 2 */
 
@@ -164,7 +161,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityHigh, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -203,7 +200,6 @@ int main(void)
   /* USER CODE END 3 */
 
 }
-
 
 /** System Clock Configuration
 */
@@ -244,7 +240,6 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
-
 /* ADC1 init function */
 void MX_ADC1_Init(void)
 {
@@ -275,7 +270,6 @@ void MX_ADC1_Init(void)
 
 }
 
-
 /* DAC init function */
 void MX_DAC_Init(void)
 {
@@ -294,7 +288,6 @@ void MX_DAC_Init(void)
   HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1);
 
 }
-
 
 /* TIM2 init function */
 void MX_TIM2_Init(void)
@@ -319,7 +312,6 @@ void MX_TIM2_Init(void)
 
 }
 
-
 /* TIM6 init function */
 void MX_TIM6_Init(void)
 {
@@ -338,15 +330,14 @@ void MX_TIM6_Init(void)
 
 }
 
-
 /** 
   * Enable DMA controller clock
   */
 void MX_DMA_Init(void) 
 {
   /* DMA controller clock enable */
-  __DMA1_CLK_ENABLE();
   __DMA2_CLK_ENABLE();
+  __DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 5, 0);
@@ -355,7 +346,6 @@ void MX_DMA_Init(void)
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
 }
-
 
 /** Configure pins as 
         * Analog 
@@ -388,32 +378,28 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   HAL_GPIO_Init(LED4_GPIO_Port, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-
 }
-
 
 /* USER CODE BEGIN 4 */
 
-uint32_t dacCounter = 0;
-float32_t dacPeriod= 0x7FF / 50000000.;
-float32_t dacResolution = 2^12;
-/**
-  * @brief  Conversion complete callback in non blocking mode for Channel1
-  * @param  hdac: pointer to a DAC_HandleTypeDef structure that contains
-  *         the configuration information for the specified DAC.
-  * @retval None
-  */
-void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac)
-{
-  float32_t theta = dacCounter * 2. * 3.14 * dacPeriod;
-  uint32_t sinTheta = dacResolution * (1.001 + arm_sin_f32(theta)) / 2.;
-
-//  uhDACxConvertedValue = (uint32_t)sinTheta;
-  dacCounter += 1;
-}
+//uint32_t dacCounter = 0;
+//float32_t dacPeriod= 0x7FF / 50000000.;
+//float32_t dacResolution = 2^12;
+/////**
+////  * @brief  Conversion complete callback in non blocking mode for Channel1
+////  * @param  hdac: pointer to a DAC_HandleTypeDef structure that contains
+////  *         the configuration information for the specified DAC.
+////  * @retval None
+////  */
+//void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac)
+//{
+//  float32_t theta = dacCounter * 2. * 3.14 * dacPeriod;
+//  uint32_t sinTheta = dacResolution * (1.001 + arm_sin_f32(theta)) / 2.;
+//
+////  uhDACxConvertedValue = (uint32_t)sinTheta;
+//  dacCounter += 1;
+////  HAL_DAC_SetValue(hdac, DAC_CHANNEL_1, DAC_ALIGN_8B_R, 2048);
+//}
 
 
 static void ToggleLed4(void const * argument)
@@ -459,6 +445,13 @@ static void BatteryVoltageController(void const * argument)
 {
 //      DAC_Ch1_TriangleConfig();
 //      DAC_Ch1_EscalatorConfig();
+
+//  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)aEscalator8bit, 6, DAC_ALIGN_8B_R) != HAL_OK)
+//  {
+//    /* Start Error */
+//    Error_Handler();
+//  }
+
   /* Infinite loop */
   while (1)
   {
@@ -617,7 +610,6 @@ void InitializeVoltageStruct()
 
 /**
 /* USER CODE END 4 */
-
 
 /* StartDefaultTask function */
 void StartDefaultTask(void const * argument)
