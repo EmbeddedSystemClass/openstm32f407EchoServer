@@ -36,7 +36,9 @@
 #include "lwip.h"
 
 /* USER CODE BEGIN Includes */
-#include "httpserver-socket.h"
+#include "battery-socket.h"
+#include "arm_math.h"
+#include "arm_common_tables.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -63,6 +65,7 @@ __IO uint8_t ubKeyPressed = SET;
 
 /* Variable used to get converted value */
 __IO uint16_t uhADCxConvertedValue = 0;
+__IO uint16_t uhDACxConvertedValue = 0;
 uint32_t sampleCounter = 0;
 uint32_t sampleMultiplier = 0;
 uint32_t buffer[VOLTAGE_BUFFER_LENGTH] = {0};
@@ -118,17 +121,32 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_ADC1_Init();
-//  MX_DAC_Init();
+  MX_DAC_Init();
   MX_TIM2_Init();
   MX_TIM6_Init();
 
   /* USER CODE BEGIN 2 */
 
-  /*##-1- Configure the DAC peripheral #######################################*/
-  hdac.Instance = DAC;
+//  /*##-1- Configure the DAC peripheral #######################################*/
+//  hdac.Instance = DAC;
 
   /*##-2- Enable TIM peripheral counter ######################################*/
   HAL_TIM_Base_Start(&htim6);
+
+//  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)&aEscalator8bit, sizeof(uint32_t), DAC_ALIGN_12B_R) != HAL_OK)
+  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)&aEscalator8bit, 6, DAC_ALIGN_8B_R) != HAL_OK)
+  {
+    /* Start Error */
+    Error_Handler();
+  }
+
+  /*##-2- Start the TIM Base generation in interrupt mode ####################*/
+  /* Start Channel1 */
+  if(HAL_TIM_Base_Start_IT(&htim2) != HAL_OK)
+  {
+    /* Starting Error */
+    Error_Handler();
+  }
 
   /* USER CODE END 2 */
 
@@ -146,14 +164,14 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityHigh, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
 
-  osThreadDef(LED4, ToggleLed4, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-  osThreadCreate(osThread(LED4), NULL);
+//  osThreadDef(LED4, ToggleLed4, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+//  osThreadCreate(osThread(LED4), NULL);
 
   osThreadDef(BATTERYADC1, BatteryVoltageMonitor, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
   osThreadCreate(osThread(BATTERYADC1), NULL);
@@ -379,16 +397,27 @@ void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+uint32_t dacCounter = 0;
+float32_t dacPeriod= 0x7FF / 50000000.;
+float32_t dacResolution = 2^12;
+/**
+  * @brief  Conversion complete callback in non blocking mode for Channel1
+  * @param  hdac: pointer to a DAC_HandleTypeDef structure that contains
+  *         the configuration information for the specified DAC.
+  * @retval None
+  */
+void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac)
+{
+  float32_t theta = dacCounter * 2. * 3.14 * dacPeriod;
+  uint32_t sinTheta = dacResolution * (1.001 + arm_sin_f32(theta)) / 2.;
+
+//  uhDACxConvertedValue = (uint32_t)sinTheta;
+  dacCounter += 1;
+}
+
 
 static void ToggleLed4(void const * argument)
 {
-  /*##-2- Start the TIM Base generation in interrupt mode ####################*/
-  /* Start Channel1 */
-  if(HAL_TIM_Base_Start_IT(&htim2) != HAL_OK)
-  {
-    /* Starting Error */
-    Error_Handler();
-  }
 
 	for(;;)
 	{}
@@ -428,37 +457,12 @@ static void BatteryVoltageMonitor(void const * argument)
 
 static void BatteryVoltageController(void const * argument)
 {
-      HAL_DAC_DeInit(&hdac);
-      DAC_Ch1_TriangleConfig();
+//      DAC_Ch1_TriangleConfig();
 //      DAC_Ch1_EscalatorConfig();
-
   /* Infinite loop */
   while (1)
   {
 	  osDelay(1);
-    /* If the USER Button is pressed */
-//    if (ubKeyPressed != RESET)
-//    {
-//      HAL_DAC_DeInit(&hdac);
-
-//      /* Select waves forms according to the USER Button status */
-//      if (ubSelectedWavesForm == 1)
-//      {
-        /* The triangle wave has been selected */
-
-        /* Triangle Wave generator -------------------------------------------*/
-//        DAC_Ch1_TriangleConfig();
-//      }
-//      else
-//      {
-//        /* The escalator wave has been selected */
-//
-//        /* Escalator Wave generator ------------------------------------------*/
-//        DAC_Ch1_EscalatorConfig();
-//      }
-//
-//      ubKeyPressed = RESET;
-//    }
   }
 
 }
@@ -569,7 +573,6 @@ uint32_t * getVoltagePacket()
 
 #define VOLTAGE_SUBSAMPLE 126
 uint32_t averagingBuffer = 0;
-
 /**
   * @brief  Conversion complete callback in non blocking mode
   * @param  AdcHandle : AdcHandle handle

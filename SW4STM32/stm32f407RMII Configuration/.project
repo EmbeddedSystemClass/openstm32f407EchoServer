@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>stm32f407RMII Configuration</name>
-	<comment />
+	<comment></comment>
 	<projects>
 	</projects>
 	<buildSpec>
@@ -31,6 +31,36 @@
 			<locationURI>PARENT-2-PROJECT_LOC/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f407xx.s</locationURI>
 		</link>
 		<link>
+			<name>Application/User/arm_common_tables.c</name>
+			<type>1</type>
+			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Drivers/CMSIS/DSP_Lib/Source/CommonTables/arm_common_tables.c</location>
+		</link>
+		<link>
+			<name>Application/User/arm_common_tables.h</name>
+			<type>1</type>
+			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Drivers/CMSIS/Include/arm_common_tables.h</location>
+		</link>
+		<link>
+			<name>Application/User/arm_math.h</name>
+			<type>1</type>
+			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Drivers/CMSIS/Include/arm_math.h</location>
+		</link>
+		<link>
+			<name>Application/User/arm_sin_f32.c</name>
+			<type>1</type>
+			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Drivers/CMSIS/DSP_Lib/Source/FastMathFunctions/arm_sin_f32.c</location>
+		</link>
+		<link>
+			<name>Application/User/battery-socket.c</name>
+			<type>1</type>
+			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Src/battery-socket.c</location>
+		</link>
+		<link>
+			<name>Application/User/battery-socket.h</name>
+			<type>1</type>
+			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Inc/battery-socket.h</location>
+		</link>
+		<link>
 			<name>Application/User/ethernetif.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Src/ethernetif.c</locationURI>
@@ -39,16 +69,6 @@
 			<name>Application/User/freertos.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Src/freertos.c</locationURI>
-		</link>
-		<link>
-			<name>Application/User/httpserver-socket.c</name>
-			<type>1</type>
-			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Src/httpserver-socket.c</location>
-		</link>
-		<link>
-			<name>Application/User/httpserver-socket.h</name>
-			<type>1</type>
-			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Inc/httpserver-socket.h</location>
 		</link>
 		<link>
 			<name>Application/User/lwip.c</name>

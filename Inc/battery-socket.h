@@ -49,7 +49,7 @@ typedef struct
 } VoltageStruct;
 
 /* Exported constants --------------------------------------------------------*/
-#define VOLTAGE_BUFFER_LENGTH 6000
+#define VOLTAGE_BUFFER_LENGTH 9000
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 
