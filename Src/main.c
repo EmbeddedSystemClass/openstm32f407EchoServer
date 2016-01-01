@@ -125,25 +125,16 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 
-//  /*##-1- Configure the DAC peripheral #######################################*/
-//  hdac.Instance = DAC;
-
   /*##-2- Enable TIM peripheral counter ######################################*/
   HAL_TIM_Base_Start(&htim6);
 
-  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)aEscalator8bit, 6, DAC_ALIGN_8B_R) != HAL_OK)
-  {
-    /* Start Error */
-    Error_Handler();
-  }
-
   /*##-2- Start the TIM Base generation in interrupt mode ####################*/
   /* Start Channel1 */
-//  if(HAL_TIM_Base_Start_IT(&htim2) != HAL_OK)
-//  {
-//    /* Starting Error */
-//    Error_Handler();
-//  }
+  if(HAL_TIM_Base_Start_IT(&htim2) != HAL_OK)
+  {
+    /* Starting Error */
+    Error_Handler();
+  }
 
   /* USER CODE END 2 */
 
@@ -402,14 +393,6 @@ void MX_GPIO_Init(void)
 //}
 
 
-static void ToggleLed4(void const * argument)
-{
-
-	for(;;)
-	{}
-}
-
-
 /**
   * @brief  Period elapsed callback in non blocking mode
   * @param  htim: TIM handle
@@ -441,16 +424,23 @@ static void BatteryVoltageMonitor(void const * argument)
 }
 
 
+#define waveformSize 4096
+uint16_t waveform[waveformSize];
 static void BatteryVoltageController(void const * argument)
 {
 //      DAC_Ch1_TriangleConfig();
 //      DAC_Ch1_EscalatorConfig();
+  uint16_t i;
+  for(i=0; i<waveformSize; i++)
+  {
+	  waveform[i] = i * 4095 / (waveformSize - 1);
+  }
 
-//  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)aEscalator8bit, 6, DAC_ALIGN_8B_R) != HAL_OK)
-//  {
-//    /* Start Error */
-//    Error_Handler();
-//  }
+  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)waveform, waveformSize, DAC_ALIGN_12B_R) != HAL_OK)
+  {
+    /* Start Error */
+    Error_Handler();
+  }
 
   /* Infinite loop */
   while (1)

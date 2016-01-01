@@ -99,7 +99,6 @@ NVIC.DMA1_Stream5_IRQn=true\:5\:0\:false
 NVIC.DMA2_Stream0_IRQn=true\:6\:0\:true
 NVIC.ETH_IRQn=true\:5\:0\:false
 NVIC.PriorityGroup=NVIC_PRIORITYGROUP_4
-NVIC.RCC_IRQn=true\:5\:0\:false
 NVIC.SysTick_IRQn=true\:0\:0\:false
 NVIC.TIM2_IRQn=true\:5\:0\:false
 PA0-WKUP.Locked=true
