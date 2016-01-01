@@ -4,7 +4,7 @@
   * Description        : Main program body
   ******************************************************************************
   *
-  * COPYRIGHT(c) 2015 STMicroelectronics
+  * COPYRIGHT(c) 2016 STMicroelectronics
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -69,6 +69,12 @@ uint32_t sampleMultiplier = 0;
 uint32_t buffer[VOLTAGE_BUFFER_LENGTH] = {0};
 uint32_t voltagePacket[VOLTAGE_BUFFER_LENGTH] = {0};
 
+#define waveformSize 1024
+uint32_t waveform[waveformSize];
+uint16_t waveformUp[waveformSize];
+uint16_t waveformDown[waveformSize];
+uint8_t waveformIsUp = 1;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -124,6 +130,12 @@ int main(void)
   MX_TIM6_Init();
 
   /* USER CODE BEGIN 2 */
+  uint16_t i;
+  for(i=0; i<waveformSize; i++)
+  {
+	  waveformUp[i] = waveformDown[(waveformSize - 1) - i] =  i * 4095 / (waveformSize - 1);
+
+  }
 
   /*##-2- Enable TIM peripheral counter ######################################*/
   HAL_TIM_Base_Start(&htim6);
@@ -424,18 +436,11 @@ static void BatteryVoltageMonitor(void const * argument)
 }
 
 
-#define waveformSize 4096
-uint16_t waveform[waveformSize];
 static void BatteryVoltageController(void const * argument)
 {
 //      DAC_Ch1_TriangleConfig();
 //      DAC_Ch1_EscalatorConfig();
-  uint16_t i;
-  for(i=0; i<waveformSize; i++)
-  {
-	  waveform[i] = i * 4095 / (waveformSize - 1);
-  }
-
+  memcpy(waveform, waveformUp, waveformSize);
   if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)waveform, waveformSize, DAC_ALIGN_12B_R) != HAL_OK)
   {
     /* Start Error */
@@ -448,6 +453,32 @@ static void BatteryVoltageController(void const * argument)
 	  osDelay(1);
   }
 
+}
+
+
+/**
+  * @brief  Conversion complete callback in non blocking mode for Channel1
+  * @param  hdac: pointer to a DAC_HandleTypeDef structure that contains
+  *         the configuration information for the specified DAC.
+  * @retval None
+  */
+void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac)
+{
+	if(waveformIsUp)
+	{
+	  memcpy(waveform, waveformDown, waveformSize);
+	  waveformIsUp = 0;
+	} else
+	{
+		memcpy(waveform, waveformUp, waveformSize);
+		waveformIsUp = 1;
+	}
+
+	if(HAL_DAC_Start_DMA(hdac, DAC_CHANNEL_1, (uint32_t*)waveform, waveformSize, DAC_ALIGN_12B_R) != HAL_OK)
+	{
+	/* Start Error */
+	Error_Handler();
+	}
 }
 
 
