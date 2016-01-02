@@ -41,6 +41,11 @@
 			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Drivers/CMSIS/Include/arm_common_tables.h</location>
 		</link>
 		<link>
+			<name>Application/User/arm_cos_f32.c</name>
+			<type>1</type>
+			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Drivers/CMSIS/DSP_Lib/Source/FastMathFunctions/arm_cos_f32.c</location>
+		</link>
+		<link>
 			<name>Application/User/arm_math.h</name>
 			<type>1</type>
 			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Drivers/CMSIS/Include/arm_math.h</location>

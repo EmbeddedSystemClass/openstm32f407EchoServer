@@ -564,7 +564,7 @@ uint32_t * getVoltagePacket()
 
 
 #define VOLTAGE_SUBSAMPLE 126
-#define PERIOD 126
+#define PERIOD 12600
 uint32_t averagingBuffer = 0;
 uint32_t tick = 0;
 //int16_t waveformValue[6] = {0};
@@ -608,13 +608,39 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
     }
 
     float32_t phase = ((float32_t)tick) * 2. * 3.14 /((float32_t)PERIOD);
-    float32_t sin = arm_sin_f32(phase);
+    float32_t sin = arm_sin_f32(phase * 10.0);
+    float32_t cos = arm_cos_f32(phase);
 
-    uint16_t waveformValue = 4095. * (1. +  sin) / 2;
+    uint16_t waveformValue = 4095. * (2. +  .3 * sin + cos) / 4.;
+
     HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, waveformValue);
     HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 
 }
+
+
+/**
+  * @brief  Error DAC callback for Channel1.
+  * @param  hdac: pointer to a DAC_HandleTypeDef structure that contains
+  *         the configuration information for the specified DAC.
+  * @retval None
+  */
+void HAL_DAC_ErrorCallbackCh1(DAC_HandleTypeDef *hdac)
+{
+	Error_Handler();
+}
+
+/**
+  * @brief  DMA underrun DAC callback for channel1.
+  * @param  hdac: pointer to a DAC_HandleTypeDef structure that contains
+  *         the configuration information for the specified DAC.
+  * @retval None
+  */
+void HAL_DAC_DMAUnderrunCallbackCh1(DAC_HandleTypeDef *hdac)
+{
+	Error_Handler();
+}
+
 
 
 void InitializeVoltageStruct()
