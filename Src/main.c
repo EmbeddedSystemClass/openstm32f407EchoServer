@@ -69,12 +69,6 @@ uint32_t sampleMultiplier = 0;
 uint32_t buffer[VOLTAGE_BUFFER_LENGTH] = {0};
 uint32_t voltagePacket[VOLTAGE_BUFFER_LENGTH] = {0};
 
-#define waveformSize 1024
-uint32_t waveform[waveformSize];
-uint16_t waveformUp[waveformSize];
-uint16_t waveformDown[waveformSize];
-uint8_t waveformIsUp = 1;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -130,12 +124,6 @@ int main(void)
   MX_TIM6_Init();
 
   /* USER CODE BEGIN 2 */
-  uint16_t i;
-  for(i=0; i<waveformSize; i++)
-  {
-	  waveformUp[i] = waveformDown[(waveformSize - 1) - i] =  i * 4095 / (waveformSize - 1);
-
-  }
 
   /*##-2- Enable TIM peripheral counter ######################################*/
   HAL_TIM_Base_Start(&htim6);
@@ -176,8 +164,8 @@ int main(void)
   osThreadDef(BATTERYADC1, BatteryVoltageMonitor, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
   osThreadCreate(osThread(BATTERYADC1), NULL);
 
-  osThreadDef(BATTERYDAC1, BatteryVoltageController, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-  osThreadCreate(osThread(BATTERYDAC1), NULL);
+//  osThreadDef(BATTERYDAC1, BatteryVoltageController, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+//  osThreadCreate(osThread(BATTERYDAC1), NULL);
 
   /* USER CODE END RTOS_THREADS */
 
@@ -440,12 +428,6 @@ static void BatteryVoltageController(void const * argument)
 {
 //      DAC_Ch1_TriangleConfig();
 //      DAC_Ch1_EscalatorConfig();
-  memcpy(waveform, waveformUp, waveformSize);
-  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)waveform, waveformSize, DAC_ALIGN_12B_R) != HAL_OK)
-  {
-    /* Start Error */
-    Error_Handler();
-  }
 
   /* Infinite loop */
   while (1)
@@ -464,21 +446,17 @@ static void BatteryVoltageController(void const * argument)
   */
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac)
 {
-	if(waveformIsUp)
-	{
-	  memcpy(waveform, waveformDown, waveformSize);
-	  waveformIsUp = 0;
-	} else
-	{
-		memcpy(waveform, waveformUp, waveformSize);
-		waveformIsUp = 1;
-	}
+//	q15_t phase = 10 * HAL_GetTick() / 1000;
+//	waveformValue = arm_sin_q15(phase);
+//	HAL_DAC_SetValue(hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, waveformValue);
+//	HAL_DAC_Start(hdac, DAC_CHANNEL_1);
 
-	if(HAL_DAC_Start_DMA(hdac, DAC_CHANNEL_1, (uint32_t*)waveform, waveformSize, DAC_ALIGN_12B_R) != HAL_OK)
-	{
-	/* Start Error */
-	Error_Handler();
-	}
+//	waveformValue = HAL_GetTick() % 4095;
+//	if(HAL_DAC_Start_DMA(hdac, DAC_CHANNEL_1, (uint32_t*)&waveformValue, sizeof(uint16_t), DAC_ALIGN_12B_R) != HAL_OK)
+//	{
+//	/* Start Error */
+//	Error_Handler();
+//	}
 }
 
 
@@ -586,7 +564,10 @@ uint32_t * getVoltagePacket()
 
 
 #define VOLTAGE_SUBSAMPLE 126
+#define PERIOD 126
 uint32_t averagingBuffer = 0;
+uint32_t tick = 0;
+//int16_t waveformValue[6] = {0};
 /**
   * @brief  Conversion complete callback in non blocking mode
   * @param  AdcHandle : AdcHandle handle
@@ -612,10 +593,27 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
 
     	sampleCounter = 0;
     	averagingBuffer = 0;
+
     } else
 	{
 		sampleCounter += 1;
 	}
+
+    if(tick >= PERIOD)
+    {
+    	tick = 0;
+    }else
+    {
+    	tick += 1;
+    }
+
+    float32_t phase = ((float32_t)tick) * 2. * 3.14 /((float32_t)PERIOD);
+    float32_t sin = arm_sin_f32(phase);
+
+    uint16_t waveformValue = 4095. * (1. +  sin) / 2;
+    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, waveformValue);
+    HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+
 }
 
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>stm32f407RMII Configuration</name>
-	<comment />
+	<comment></comment>
 	<projects>
 	</projects>
 	<buildSpec>
@@ -46,9 +46,19 @@
 			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Drivers/CMSIS/Include/arm_math.h</location>
 		</link>
 		<link>
+			<name>Application/User/arm_q15_to_float.c</name>
+			<type>1</type>
+			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Drivers/CMSIS/DSP_Lib/Source/SupportFunctions/arm_q15_to_float.c</location>
+		</link>
+		<link>
 			<name>Application/User/arm_sin_f32.c</name>
 			<type>1</type>
 			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Drivers/CMSIS/DSP_Lib/Source/FastMathFunctions/arm_sin_f32.c</location>
+		</link>
+		<link>
+			<name>Application/User/arm_sin_q15.c</name>
+			<type>1</type>
+			<location>C:/Users/scott/repos/code/openstm/stm32f407RMII/Drivers/CMSIS/DSP_Lib/Source/FastMathFunctions/arm_sin_q15.c</location>
 		</link>
 		<link>
 			<name>Application/User/battery-socket.c</name>
