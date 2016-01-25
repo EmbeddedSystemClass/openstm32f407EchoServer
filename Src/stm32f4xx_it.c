@@ -41,7 +41,6 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern void xPortSysTickHandler(void);
 extern ETH_HandleTypeDef heth;
 extern DMA_HandleTypeDef hdma_adc1;
 extern DMA_HandleTypeDef hdma_dac1;
@@ -57,9 +56,9 @@ extern TIM_HandleTypeDef htim2;
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
-  /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
+  /* USER CODE END SysTick_IRQn 0 */
+
   osSystickHandler();
   /* USER CODE BEGIN SysTick_IRQn 1 */
 

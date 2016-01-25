@@ -150,11 +150,11 @@ int main(void)
   }
 
   /*##-2- Enable DAC Channel1 and associated DMA #############################*/
-//  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)&uhDACxConvertedValue, 1, DAC_ALIGN_12B_R) != HAL_OK)
-//  {
-//    /* Start DMA Error */
-//    Error_Handler();
-//  }
+  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)&uhDACxConvertedValue, 1, DAC_ALIGN_12B_R) != HAL_OK)
+  {
+    /* Start DMA Error */
+    Error_Handler();
+  }
 
 
 
