@@ -27,8 +27,8 @@
 
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __HTTPSERVER_SOCKET_H__
-#define __HTTPSERVER_SOCKET_H__
 
+#define __HTTPSERVER_SOCKET_H__
 /* Includes ------------------------------------------------------------------*/
 /* Exported types ------------------------------------------------------------*/
 
@@ -40,20 +40,20 @@ typedef struct
 
 	uint32_t packetHeader;
 
-	uint32_t packetLength;
-	uint32_t packetCount;
-
-	uint32_t * buffer;
+	uint32_t * bufferFirstHalf;
+	uint32_t * bufferLastHalf;
 	uint32_t bufferLength;
 
 } VoltageStruct;
 
 /* Exported constants --------------------------------------------------------*/
-#define VOLTAGE_BUFFER_LENGTH 9000
+#define VOLTAGE_BUFFER_LENGTH 128
+#define ETHERNET_BUFFER_LENGTH 9000
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 
 //void http_server_socket_init(void);
+extern VoltageStruct voltageStruct;
 void voltage_server_socket();
 uint32_t * getVoltagePacket();
 void broadcastVoltageAll();

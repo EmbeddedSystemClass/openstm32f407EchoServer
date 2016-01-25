@@ -62,12 +62,12 @@ static DAC_ChannelConfTypeDef sConfig;
 const uint8_t aEscalator8bit[6] = {0x0, 0x33, 0x66, 0x99, 0xCC, 0xFF};
 
 /* Variable used to get converted value */
-__IO uint16_t uhADCxConvertedValue = 0;
+__IO uint16_t uhADCxConvertedValue[VOLTAGE_BUFFER_LENGTH] = {0};
 __IO uint16_t uhDACxConvertedValue = 0;
 uint32_t sampleCounter = 0;
 uint32_t sampleMultiplier = 0;
-uint32_t buffer[VOLTAGE_BUFFER_LENGTH] = {0};
-uint32_t voltagePacket[VOLTAGE_BUFFER_LENGTH] = {0};
+uint32_t bufferFirst[ETHERNET_BUFFER_LENGTH] = {0};
+uint32_t bufferLast[ETHERNET_BUFFER_LENGTH] = {0};
 
 /* USER CODE END PV */
 
@@ -89,6 +89,8 @@ static void BatteryVoltageMonitor(void const * argument);
 static void BatteryVoltageController(void const * argument);
 static void Error_Handler(void);
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle);
+void HAL_ADC_ConvCpltCallback2(ADC_HandleTypeDef* AdcHandle);
+void SET_DAC();
 
 static void DAC_Ch1_TriangleConfig(void);
 static void DAC_Ch1_EscalatorConfig(void);
@@ -104,6 +106,10 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  voltageStruct.packetHeader = 0x0000AA55;
+  voltageStruct.bufferFirstHalf = bufferFirst;
+  voltageStruct.bufferLastHalf = bufferLast;
+  voltageStruct.bufferLength = ETHERNET_BUFFER_LENGTH;
 
   /* USER CODE END 1 */
 
@@ -136,6 +142,22 @@ int main(void)
     Error_Handler();
   }
 
+  /*##-3- Start the conversion process and enable interrupt ##################*/
+  if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&uhADCxConvertedValue, VOLTAGE_BUFFER_LENGTH) != HAL_OK)
+  {
+    /* Start Conversation Error */
+    Error_Handler();
+  }
+
+  /*##-2- Enable DAC Channel1 and associated DMA #############################*/
+//  if(HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)&uhDACxConvertedValue, 1, DAC_ALIGN_12B_R) != HAL_OK)
+//  {
+//    /* Start DMA Error */
+//    Error_Handler();
+//  }
+
+
+
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -161,8 +183,8 @@ int main(void)
 //  osThreadDef(LED4, ToggleLed4, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
 //  osThreadCreate(osThread(LED4), NULL);
 
-  osThreadDef(BATTERYADC1, BatteryVoltageMonitor, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-  osThreadCreate(osThread(BATTERYADC1), NULL);
+//  osThreadDef(BATTERYADC1, BatteryVoltageMonitor, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+//  osThreadCreate(osThread(BATTERYADC1), NULL);
 
 //  osThreadDef(BATTERYDAC1, BatteryVoltageController, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
 //  osThreadCreate(osThread(BATTERYDAC1), NULL);
@@ -409,7 +431,7 @@ static void BatteryVoltageMonitor(void const * argument)
 {
 
   /*##-3- Start the conversion process and enable interrupt ##################*/
-  if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&uhADCxConvertedValue, 1) != HAL_OK)
+  if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&uhADCxConvertedValue, VOLTAGE_BUFFER_LENGTH) != HAL_OK)
   {
     /* Start Conversation Error */
     Error_Handler();
@@ -444,8 +466,8 @@ static void BatteryVoltageController(void const * argument)
   *         the configuration information for the specified DAC.
   * @retval None
   */
-void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac)
-{
+//void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac)
+//{
 //	q15_t phase = 10 * HAL_GetTick() / 1000;
 //	waveformValue = arm_sin_q15(phase);
 //	HAL_DAC_SetValue(hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, waveformValue);
@@ -457,7 +479,7 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac)
 //	/* Start Error */
 //	Error_Handler();
 //	}
-}
+//}
 
 
 /**
@@ -550,23 +572,47 @@ static void DAC_Ch1_TriangleConfig(void)
 }
 
 
-uint32_t * getVoltagePacket()
-{
-	int i;
-	for(i = 0; i < VOLTAGE_BUFFER_LENGTH; i++)
-	{
-		voltagePacket[i] = voltageStruct.buffer[i];
-		voltageStruct.buffer[i] = 0;
-	}
-	voltageStruct.packetCount = 0;
-	return voltagePacket;
+//uint32_t * getVoltagePacket()
+//{
+//	int i;
+//	for(i = 0; i < VOLTAGE_BUFFER_LENGTH; i++)
+//	{
+//		voltagePacket[i] = voltageStruct.buffer[i];
+//		voltageStruct.buffer[i] = 0;
+//	}
+//	voltageStruct.packetCount = 0;
+//	return voltagePacket;
+//}
+
+
+#define PERIOD 2520
+uint32_t averagingBuffer = 0;
+uint32_t tick = 0;
+/**
+  * @brief  Conversion complete callback in non blocking mode for Channel1
+  * @param  hdac: pointer to a DAC_HandleTypeDef structure that contains
+  *         the configuration information for the specified DAC.
+  * @retval None
+  */
+void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac){
+	SET_DAC();
 }
 
 
-#define VOLTAGE_SUBSAMPLE 126
-#define PERIOD 12600
-uint32_t averagingBuffer = 0;
-uint32_t tick = 0;
+void SET_DAC()
+{
+    float32_t phase = ((float32_t)tick * (VOLTAGE_BUFFER_LENGTH / 2)) * 2. * 3.14 /((float32_t)PERIOD);
+    float32_t sin = arm_sin_f32(phase * 10.0);
+    float32_t cos = arm_cos_f32(phase);
+
+    uint16_t waveformValue = 4095. * (2. +  .3 * sin + cos) / 4.;
+
+    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, waveformValue);
+    HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+}
+
+
+int i, firstHalfBufferIsActive = 1;
 //int16_t waveformValue[6] = {0};
 /**
   * @brief  Conversion complete callback in non blocking mode
@@ -577,47 +623,105 @@ uint32_t tick = 0;
   */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
 {
-	averagingBuffer += uhADCxConvertedValue;
-    if(sampleCounter >= VOLTAGE_SUBSAMPLE)
-    {
-    	uint32_t newHeaderLocation = voltageStruct.packetCount * voltageStruct.packetLength;
-    	if(newHeaderLocation + voltageStruct.packetLength <= voltageStruct.bufferLength)
-    	{
-			voltageStruct.buffer[newHeaderLocation] = voltageStruct.packetHeader;
-			voltageStruct.buffer[newHeaderLocation + 1] = sampleMultiplier - VOLTAGE_SUBSAMPLE / 2;
-			voltageStruct.buffer[newHeaderLocation + 2] = averagingBuffer / VOLTAGE_SUBSAMPLE;
-			voltageStruct.packetCount += 1;
-    	}
+	int j, startIndex, bufferAverage = 0;
 
-    	sampleMultiplier += 1;
-
-    	sampleCounter = 0;
-    	averagingBuffer = 0;
-
-    } else
-	{
-		sampleCounter += 1;
+	startIndex = VOLTAGE_BUFFER_LENGTH / 2;
+	for (j=startIndex; j<VOLTAGE_BUFFER_LENGTH; j++){
+		bufferAverage += uhADCxConvertedValue[j];
 	}
 
-    if(tick >= PERIOD)
-    {
-    	tick = 0;
-    }else
-    {
-    	tick += 1;
-    }
+	if(firstHalfBufferIsActive){
+		voltageStruct.bufferFirstHalf[i] = voltageStruct.packetHeader;
+		voltageStruct.bufferFirstHalf[i + 1] = tick * (VOLTAGE_BUFFER_LENGTH / 2);
+		voltageStruct.bufferFirstHalf[i + 2] = bufferAverage / (VOLTAGE_BUFFER_LENGTH / 2);
+	}else{
+		voltageStruct.bufferLastHalf[i] = voltageStruct.packetHeader;
+		voltageStruct.bufferLastHalf[i + 1] = tick * (VOLTAGE_BUFFER_LENGTH / 2);
+		voltageStruct.bufferLastHalf[i + 2] = bufferAverage / (VOLTAGE_BUFFER_LENGTH / 2);
+	}
+	tick += 1;
 
-    float32_t phase = ((float32_t)tick) * 2. * 3.14 /((float32_t)PERIOD);
-    float32_t sin = arm_sin_f32(phase * 10.0);
-    float32_t cos = arm_cos_f32(phase);
-
-    uint16_t waveformValue = 4095. * (2. +  .3 * sin + cos) / 4.;
-
-    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, waveformValue);
-    HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
-
+	if(i<ETHERNET_BUFFER_LENGTH - 3){
+		i += 3;
+	}else{
+		i = 0;
+		firstHalfBufferIsActive = !firstHalfBufferIsActive;
+	}
 }
 
+
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* AdcHandle)
+{
+	int j, endIndex, bufferAverage = 0;
+
+	endIndex = VOLTAGE_BUFFER_LENGTH / 2;
+	for (j=0; j<endIndex; j++){
+		bufferAverage += uhADCxConvertedValue[j];
+	}
+
+	if(firstHalfBufferIsActive){
+		voltageStruct.bufferFirstHalf[i] = voltageStruct.packetHeader;
+		voltageStruct.bufferFirstHalf[i + 1] = tick * (VOLTAGE_BUFFER_LENGTH / 2);
+		voltageStruct.bufferFirstHalf[i + 2] = bufferAverage / (VOLTAGE_BUFFER_LENGTH / 2);
+	}else{
+		voltageStruct.bufferLastHalf[i] = voltageStruct.packetHeader;
+		voltageStruct.bufferLastHalf[i + 1] = tick * (VOLTAGE_BUFFER_LENGTH / 2);
+		voltageStruct.bufferLastHalf[i + 2] = bufferAverage / (VOLTAGE_BUFFER_LENGTH / 2);
+	}
+	tick += 1;
+
+	if(i<ETHERNET_BUFFER_LENGTH - 3){
+		i += 3;
+	}else{
+		i = 0;
+		firstHalfBufferIsActive = !firstHalfBufferIsActive;
+	}
+}
+
+
+//void HAL_ADC_ConvCpltCallback2(ADC_HandleTypeDef* AdcHandle)
+//{
+//	averagingBuffer += uhADCxConvertedValue;
+//    if(sampleCounter >= VOLTAGE_SUBSAMPLE)
+//    {
+//    	uint32_t newHeaderLocation = voltageStruct.packetCount * voltageStruct.packetLength;
+//    	if(newHeaderLocation + voltageStruct.packetLength <= voltageStruct.bufferLength)
+//    	{
+//			voltageStruct.buffer[newHeaderLocation] = voltageStruct.packetHeader;
+//			voltageStruct.buffer[newHeaderLocation + 1] = sampleMultiplier - VOLTAGE_SUBSAMPLE / 2;
+//			voltageStruct.buffer[newHeaderLocation + 2] = averagingBuffer / VOLTAGE_SUBSAMPLE;
+//			voltageStruct.packetCount += 1;
+//    	}
+//
+//    	sampleMultiplier += 1;
+//
+//    	sampleCounter = 0;
+//    	averagingBuffer = 0;
+//
+//    } else
+//	{
+//		sampleCounter += 1;
+//	}
+//
+//    if(tick >= PERIOD)
+//    {
+//    	tick = 0;
+//    }else
+//    {
+//    	tick += 1;
+//    }
+//
+//    float32_t phase = ((float32_t)tick) * 2. * 3.14 /((float32_t)PERIOD);
+//    float32_t sin = arm_sin_f32(phase * 10.0);
+//    float32_t cos = arm_cos_f32(phase);
+//
+//    uint16_t waveformValue = 4095. * (2. +  .3 * sin + cos) / 4.;
+//
+//    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, waveformValue);
+//    HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+//
+//}
+//
 
 /**
   * @brief  Error DAC callback for Channel1.
@@ -642,17 +746,6 @@ void HAL_DAC_DMAUnderrunCallbackCh1(DAC_HandleTypeDef *hdac)
 }
 
 
-
-void InitializeVoltageStruct()
-{
-  voltageStruct.packetHeader = 0x0000AA55;
-  voltageStruct.packetLength = 3;
-  voltageStruct.packetCount = 0;
-  voltageStruct.buffer = buffer;
-  voltageStruct.bufferLength = VOLTAGE_BUFFER_LENGTH;
-}
-
-
 /**
 /* USER CODE END 4 */
 
@@ -664,7 +757,6 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN 5 */
 
-  InitializeVoltageStruct();
   voltage_server_socket();
 
   /* USER CODE END 5 */ 

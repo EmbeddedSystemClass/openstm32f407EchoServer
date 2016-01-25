@@ -24,7 +24,7 @@
   */
 void broadcastVoltage(int conn)
 {
-  uint32_t * voltagePacket = getVoltagePacket();
+  uint32_t lastTime = 0;
 //  memcpy(voltagePacket, getVoltagePacket(), sizeof(uint32_t) * 1000);
 
 
@@ -34,14 +34,43 @@ void broadcastVoltage(int conn)
   int goodWrite = 1;
   while(goodWrite > 0)
   {
-	  goodWrite = send(conn, (uint32_t *)voltagePacket, (size_t)(sizeof(uint32_t) * VOLTAGE_BUFFER_LENGTH), 1);
-	  voltagePacket = getVoltagePacket();
-	  osDelay(100);
+	  if(voltageStruct.bufferFirstHalf[voltageStruct.bufferLength - 2] > lastTime){
+		  goodWrite = send(conn, (uint32_t *)voltageStruct.bufferFirstHalf,
+				  (size_t)(sizeof(uint32_t) * voltageStruct.bufferLength), 1);
+		  lastTime = voltageStruct.bufferFirstHalf[voltageStruct.bufferLength - 2];
+	  }
+	  if(voltageStruct.bufferLastHalf[voltageStruct.bufferLength - 2] > lastTime){
+		  goodWrite = send(conn, (uint32_t *)voltageStruct.bufferLastHalf,
+				  (size_t)(sizeof(uint32_t) * voltageStruct.bufferLength), 1);
+		  lastTime = voltageStruct.bufferLastHalf[voltageStruct.bufferLength - 2];
+	  }
   }
 
   /* Close connection socket */
   close(conn);
 }
+
+
+//void broadcastVoltage2(int conn)
+//{
+//  uint32_t * voltagePacket = getVoltagePacket();
+////  memcpy(voltagePacket, getVoltagePacket(), sizeof(uint32_t) * 1000);
+//
+//
+//  /* Read in the request */
+////  read(conn, recv_buffer, buflen);
+//
+//  int goodWrite = 1;
+//  while(goodWrite > 0)
+//  {
+//	  goodWrite = send(conn, (uint32_t *)voltagePacket, (size_t)(sizeof(uint32_t) * ETHERNET_BUFFER_LENGTH), 1);
+//	  voltagePacket = getVoltagePacket();
+//	  osDelay(100);
+//  }
+//
+//  /* Close connection socket */
+//  close(conn);
+//}
 
 /**
   * @brief  http server thread 
